@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send } from 'lucide-react';
 
 export default function Dashboard() {
@@ -9,9 +9,10 @@ export default function Dashboard() {
   const [jobDescription, setJobDescription] = useState('');
   const [isMatching, setIsMatching] = useState(false);
   const [matchResult, setMatchResult] = useState<any>(null);
-  
-  // Mock versions list
   const [resumeVersion, setResumeVersion] = useState('v1');
+  const [activeFileName, setActiveFileName] = useState('resume.pdf');
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -28,22 +29,41 @@ export default function Dashboard() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      triggerUploadFlow();
+      const file = e.dataTransfer.files[0];
+      triggerUploadFlow(file.name);
     }
   };
 
-  const triggerUploadFlow = () => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      triggerUploadFlow(file.name);
+    }
+  };
+
+  const onBrowseClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const triggerUploadFlow = (fileName: string) => {
     setUploadStatus('uploading');
+    setActiveFileName(fileName);
     setTimeout(() => {
       setUploadStatus('parsing');
       setTimeout(() => {
         setUploadStatus('success');
+        setResumeVersion('v2');
       }, 1500);
     }, 1000);
   };
 
   const runATSScoring = () => {
-    if (!jobDescription.trim()) return;
+    if (!jobDescription.trim()) {
+      alert("Please paste a target Job Description (JD) first in the text area.");
+      return;
+    }
     setIsMatching(true);
     setTimeout(() => {
       setMatchResult({
@@ -90,14 +110,23 @@ export default function Dashboard() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            <div className="w-12 h-12 rounded-full bg-neutral-850 flex items-center justify-center mb-4 text-neutral-400 border border-neutral-850">
+            {/* Hidden native file input trigger */}
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              accept=".pdf,.docx" 
+              className="hidden" 
+            />
+
+            <div className="w-12 h-12 rounded-full bg-neutral-850 flex items-center justify-center mb-4 text-neutral-400 border border-neutral-855">
               <Upload size={20} />
             </div>
             <p className="text-sm text-neutral-200 font-semibold mb-1">Drag & drop your resume file here</p>
             <p className="text-xs text-neutral-500 mb-4">Supports PDF or DOCX formats up to 10MB</p>
             
             <button 
-              onClick={triggerUploadFlow}
+              onClick={onBrowseClick}
               className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-lg transition"
             >
               Browse Files
@@ -105,9 +134,9 @@ export default function Dashboard() {
 
             {uploadStatus !== 'idle' && (
               <div className="mt-4 text-xs font-semibold px-3 py-1 rounded bg-neutral-850 border border-neutral-800">
-                {uploadStatus === 'uploading' && <span className="text-yellow-500 animate-pulse">Uploading file stream...</span>}
-                {uploadStatus === 'parsing' && <span className="text-blue-400 animate-pulse">Running AI Document Ingest...</span>}
-                {uploadStatus === 'success' && <span className="text-green-500">Resume parsed and vectorized! (v2)</span>}
+                {uploadStatus === 'uploading' && <span className="text-yellow-500 animate-pulse">Uploading file stream: {activeFileName}...</span>}
+                {uploadStatus === 'parsing' && <span className="text-blue-400 animate-pulse">Running AI Document Ingest: {activeFileName}...</span>}
+                {uploadStatus === 'success' && <span className="text-green-500">Resume parsed and vectorized! (v2 - {activeFileName})</span>}
               </div>
             )}
           </div>
@@ -126,7 +155,9 @@ export default function Dashboard() {
                 className="bg-neutral-900 border border-neutral-850 text-xs text-neutral-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="v1">v1 - resume.pdf (Default)</option>
-                <option value="v2">v2 - resume_parsed_v2.pdf (Active)</option>
+                {resumeVersion === 'v2' && (
+                  <option value="v2">v2 - {activeFileName} (Active)</option>
+                )}
               </select>
             </div>
             
@@ -138,7 +169,11 @@ export default function Dashboard() {
               </div>
               <div className="flex justify-between border-b border-neutral-850 pb-2">
                 <span className="text-neutral-400 font-semibold">Competencies Nodes</span>
-                <span className="text-neutral-200">Python, SQL, System Design, FastAPI</span>
+                <span className="text-neutral-200">
+                  {resumeVersion === 'v2' 
+                    ? "Python, SQL, System Design, FastAPI, Docker, Celery" 
+                    : "Python, SQL, System Design, FastAPI"}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-400 font-semibold">Graph Edges Mapped</span>
