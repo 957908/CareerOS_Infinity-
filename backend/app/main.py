@@ -2,13 +2,14 @@ import time
 import logging
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.logging_config import setup_structured_logging
 from app.core.exceptions import register_custom_exception_handlers
 from app.core.middleware import CorrelationIdMiddleware
 from app.core.metrics import router as metrics_router
 from app.api.auth import router as auth_router
+from app.api.resumes import router as resumes_router
+from app.api.jobs import router as jobs_router
 
 # Setup structured logging immediately
 setup_structured_logging()
@@ -59,6 +60,8 @@ async def health_check() -> dict:
 # Register platform api routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(metrics_router, prefix=settings.API_V1_STR)
+app.include_router(resumes_router, prefix=settings.API_V1_STR)
+app.include_router(jobs_router, prefix=settings.API_V1_STR)
 
 @app.websocket("/ws/interviews/{session_id}")
 async def mock_interview_websocket(websocket: WebSocket, session_id: str):
