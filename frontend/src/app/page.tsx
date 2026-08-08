@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [matchResult, setMatchResult] = useState<any>(null);
   const [resumeVersion, setResumeVersion] = useState('v1');
   const [activeFileName, setActiveFileName] = useState('resume.pdf');
+  const [resumeId, setResumeId] = useState<string | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,14 +31,14 @@ export default function Dashboard() {
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      triggerUploadFlow(file.name);
+      triggerUploadFlow(file);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      triggerUploadFlow(file.name);
+      triggerUploadFlow(file);
     }
   };
 
@@ -47,34 +48,73 @@ export default function Dashboard() {
     }
   };
 
-  const triggerUploadFlow = (fileName: string) => {
+  const triggerUploadFlow = async (file: File) => {
     setUploadStatus('uploading');
-    setActiveFileName(fileName);
-    setTimeout(() => {
-      setUploadStatus('parsing');
-      setTimeout(() => {
-        setUploadStatus('success');
-        setResumeVersion('v2');
-      }, 1500);
-    }, 1000);
+    setActiveFileName(file.name);
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      // Make real API request to local backend
+      const response = await fetch("http://localhost:8000/api/v1/resumes/upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error("Ingestion pipeline failed.");
+      }
+      
+      const data = await response.json();
+      setResumeId(data.resume_id);
+      setUploadStatus('success');
+      setResumeVersion('v2');
+    } catch (error) {
+      console.error(error);
+      setUploadStatus('idle');
+      alert("Error: Ingestion pipeline failed. Make sure your backend server is running on port 8000 and DATABASE_URL in backend/.env is connected to Supabase.");
+    }
   };
 
-  const runATSScoring = () => {
+  const runATSScoring = async () => {
     if (!jobDescription.trim()) {
       alert("Please paste a target Job Description (JD) first in the text area.");
       return;
     }
+    
     setIsMatching(true);
-    setTimeout(() => {
-      setMatchResult({
-        score: 85,
-        confidence_score: 0.95,
-        matched: ['Python', 'FastAPI', 'System Design', 'PostgreSQL'],
-        missing: ['Celery', 'Docker'],
-        recommendation: "Embed explicit bullet points describing task queues and multi-stage container optimization setups."
+    try {
+      // Connect to real backend match API
+      const response = await fetch("http://localhost:8000/api/v1/jobs/match", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resume_id: resumeId || "00000000-0000-0000-0000-000000000000",
+          job_description: jobDescription,
+        }),
       });
+      
+      if (!response.ok) {
+        throw new Error("Match calculation failed.");
+      }
+      
+      const data = await response.json();
+      setMatchResult({
+        score: data.score,
+        confidence_score: data.confidence_score,
+        matched: data.evidence.matched_keywords,
+        missing: data.evidence.missing_keywords,
+        recommendation: data.reasoning_metadata,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Error: Match calculation failed. Make sure the backend server is running and a resume is uploaded first.");
+    } finally {
       setIsMatching(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -89,7 +129,7 @@ export default function Dashboard() {
         <div className="flex gap-4">
           <div className="px-4 py-2 rounded-lg bg-neutral-900 border border-neutral-800 text-right">
             <span className="block text-[10px] text-neutral-500 font-semibold uppercase">Active Profile</span>
-            <span className="text-sm font-semibold text-neutral-200">John Doe (Member)</span>
+            <span className="text-sm font-semibold text-neutral-200">Mock Developer</span>
           </div>
         </div>
       </div>
@@ -165,7 +205,7 @@ export default function Dashboard() {
             <div className="border border-neutral-850 bg-neutral-950/40 rounded-lg p-4 space-y-3 text-xs">
               <div className="flex justify-between border-b border-neutral-850 pb-2">
                 <span className="text-neutral-400 font-semibold">Entity Node ID</span>
-                <span className="text-neutral-200">user:john_doe_90123</span>
+                <span className="text-neutral-200">user:00000000-0000-0000-0000-000000000000</span>
               </div>
               <div className="flex justify-between border-b border-neutral-850 pb-2">
                 <span className="text-neutral-400 font-semibold">Competencies Nodes</span>

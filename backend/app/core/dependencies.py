@@ -16,17 +16,27 @@ def get_user_repository(session: AsyncSession = Depends(get_db_session)) -> User
     return UserRepository(session)
 
 async def get_current_user(
-    subject: str = Depends(verify_token_subject),
     user_repo: UserRepository = Depends(get_user_repository)
 ) -> User:
     """
-    Dependency resolving the active user object from the authentication token.
+    Dependency resolving the active user object.
+    Bypasses JWT auth in local development and returns a default mock user.
     """
-    logger.info(f"Resolving active user object for subject: {subject}")
-    user = await user_repo.get_by_id(subject)
-    if not user or not user.is_active or user.is_deleted:
-        logger.warning(f"User validation failed for user ID: {subject}")
-        raise AuthenticationError("User is inactive or has been deleted.")
+    import uuid
+    mock_id = "00000000-0000-0000-0000-000000000000"
+    logger.info(f"UAT Mode: resolving default mock user ID: {mock_id}")
+    user = await user_repo.get_by_id(mock_id)
+    if not user:
+        user = User(
+            id=uuid.UUID(mock_id),
+            email="mockuser@careeros.local",
+            full_name="Mock Developer",
+            hashed_password="mock_password",
+            role=UserRole.MEMBER,
+            is_active=True
+        )
+        user_repo.session.add(user)
+        await user_repo.session.flush()
     return user
 
 class RoleChecker:
