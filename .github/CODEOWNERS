@@ -1,0 +1,18 @@
+# CODEOWNERS - Rule assignments for the reviewer agents
+
+# Global owners for security configuration files
+/.github/workflows/    @devops-agent @cto-agent
+/.github/CODEOWNERS    @cto-agent
+
+# Documentation and Master plans
+/docs/                 @documentation-agent @cto-agent
+/docs/gov/             @cto-agent
+
+# Backend Application Code
+/backend/              @backend-agent @architecture-agent
+/backend/app/core/     @security-agent @cto-agent
+/backend/tests/        @qa-agent
+
+# Frontend Client Code
+/frontend/             @frontend-agent @ux-agent
+/frontend/tests/       @qa-agent
