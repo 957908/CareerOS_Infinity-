@@ -12,7 +12,8 @@ engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
     pool_size=10,
-    max_overflow=20
+    max_overflow=20,
+    connect_args={"prepared_statement_cache_size": 0}
 )
 
 # Async session maker binded to the engine
