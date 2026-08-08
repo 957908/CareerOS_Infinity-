@@ -10,6 +10,7 @@ from app.core.metrics import router as metrics_router
 from app.api.auth import router as auth_router
 from app.api.resumes import router as resumes_router
 from app.api.jobs import router as jobs_router
+from app.api.applications import router as applications_router
 
 from contextlib import asynccontextmanager
 from app.core.database import Base, engine
@@ -74,6 +75,7 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(metrics_router, prefix=settings.API_V1_STR)
 app.include_router(resumes_router, prefix=settings.API_V1_STR)
 app.include_router(jobs_router, prefix=settings.API_V1_STR)
+app.include_router(applications_router, prefix=settings.API_V1_STR)
 
 @app.websocket("/ws/interviews/{session_id}")
 async def mock_interview_websocket(websocket: WebSocket, session_id: str):

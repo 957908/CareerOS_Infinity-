@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send, Mail, Play, CheckCircle, RefreshCw, Terminal, Activity } from 'lucide-react';
 
 export default function Dashboard() {
   const [dragActive, setDragActive] = useState(false);
@@ -12,6 +12,19 @@ export default function Dashboard() {
   const [resumeVersion, setResumeVersion] = useState('v1');
   const [activeFileName, setActiveFileName] = useState('resume.pdf');
   const [resumeId, setResumeId] = useState<string | null>(null);
+  
+  // Applications Auto-Apply Bot States
+  const [applications, setApplications] = useState<any[]>([]);
+  const [company, setCompany] = useState('');
+  const [role, setRole] = useState('');
+  const [portalUrl, setPortalUrl] = useState('');
+  const [isApplying, setIsApplying] = useState(false);
+  
+  // Email Sync States
+  const [emailAddress, setEmailAddress] = useState('');
+  const [appPassword, setAppPassword] = useState('');
+  const [isSyncingEmail, setIsSyncingEmail] = useState(false);
+  const [syncedEmails, setSyncedEmails] = useState<any[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +69,6 @@ export default function Dashboard() {
       const formData = new FormData();
       formData.append("file", file);
       
-      // Make real API request to local backend
       const response = await fetch("http://localhost:8000/api/v1/resumes/upload", {
         method: "POST",
         body: formData,
@@ -85,7 +97,6 @@ export default function Dashboard() {
     
     setIsMatching(true);
     try {
-      // Connect to real backend match API
       const response = await fetch("http://localhost:8000/api/v1/jobs/match", {
         method: "POST",
         headers: {
@@ -116,6 +127,100 @@ export default function Dashboard() {
       setIsMatching(false);
     }
   };
+
+  // Fetch applications list from Backend Knowledge Graph
+  const fetchApplications = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications");
+      if (response.ok) {
+        const data = await response.json();
+        setApplications(data);
+      }
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    }
+  };
+
+  // Auto-Apply Trigger
+  const triggerAutoApply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company || !role || !portalUrl) {
+      alert("Please fill in Company, Role, and Portal URL details.");
+      return;
+    }
+
+    setIsApplying(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/apply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          company,
+          role,
+          portal_url: portalUrl,
+          resume_id: resumeId || "00000000-0000-0000-0000-000000000000",
+          job_description: jobDescription || `We are looking for a ${role} with expertise in modern technologies.`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Apply request failed.");
+      }
+
+      setCompany('');
+      setRole('');
+      setPortalUrl('');
+      fetchApplications();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit apply request.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  // Email Confirmation Tracker Sync
+  const syncEmails = async () => {
+    setIsSyncingEmail(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/sync-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email_address: emailAddress || null,
+          app_password: appPassword || null
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Email sync failed.");
+      }
+
+      const data = await response.json();
+      setSyncedEmails(data.emails);
+      fetchApplications();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to sync emails.");
+    } finally {
+      setIsSyncingEmail(false);
+    }
+  };
+
+  // Auto-poll applications every 3 seconds for live scraper logs updating
+  useEffect(() => {
+    fetchApplications();
+    const interval = setInterval(fetchApplications, 3000);
+    return () => clearInterval(interval);
+  }, [resumeId]);
+
+  // Counting applications applied today
+  const todayStr = new Date().toISOString().split('T')[0];
+  const appliedTodayCount = applications.filter(app => app.applied_at && app.applied_at.startsWith(todayStr)).length;
 
   return (
     <div className="flex-1 w-full flex flex-col space-y-6">
@@ -150,7 +255,6 @@ export default function Dashboard() {
             onDragOver={handleDrag}
             onDrop={handleDrop}
           >
-            {/* Hidden native file input trigger */}
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -201,7 +305,6 @@ export default function Dashboard() {
               </select>
             </div>
             
-            {/* Structured representation */}
             <div className="border border-neutral-850 bg-neutral-950/40 rounded-lg p-4 space-y-3 text-xs">
               <div className="flex justify-between border-b border-neutral-850 pb-2">
                 <span className="text-neutral-400 font-semibold">Entity Node ID</span>
@@ -226,18 +329,19 @@ export default function Dashboard() {
 
         {/* Right Side: ATS Match scoring */}
         <div className="space-y-6">
-          
-          <div className="glass-panel rounded-xl p-6 flex flex-col h-full">
-            <h2 className="font-display font-semibold text-lg text-white mb-4 flex items-center gap-2">
-              <BarChart2 size={18} className="text-blue-500" />
-              ATS Semantic Match scoring
-            </h2>
-            <textarea
-              placeholder="Paste the target Job Description (JD) here..."
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              className="flex-1 w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded-lg p-3 outline-none focus:ring-1 focus:ring-blue-500 resize-none min-h-[160px] placeholder-neutral-500"
-            />
+          <div className="glass-panel rounded-xl p-6 flex flex-col h-full justify-between">
+            <div>
+              <h2 className="font-display font-semibold text-lg text-white mb-4 flex items-center gap-2">
+                <BarChart2 size={18} className="text-blue-500" />
+                ATS Semantic Match scoring
+              </h2>
+              <textarea
+                placeholder="Paste the target Job Description (JD) here..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded-lg p-3 outline-none focus:ring-1 focus:ring-blue-500 resize-none min-h-[160px] placeholder-neutral-500"
+              />
+            </div>
             
             <button
               onClick={runATSScoring}
@@ -285,7 +389,164 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+        </div>
 
+      </div>
+
+      {/* TIER 2 SECTION: Auto-Apply Bot & Email Confirmation Tracker */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+        
+        {/* Left Panel: Auto-Apply Launchpad */}
+        <div className="lg:col-span-2 glass-panel rounded-xl p-6 space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="font-display font-semibold text-lg text-white flex items-center gap-2">
+              <Play size={18} className="text-blue-500 animate-pulse" />
+              Automated Job Apply Bot (Daily Quota)
+            </h2>
+            <div className="px-3 py-1 rounded bg-neutral-900 border border-neutral-850 flex items-center gap-2">
+              <Activity size={14} className="text-green-500" />
+              <span className="text-[11px] text-neutral-300">
+                Applied Today: <strong className="text-white text-xs">{appliedTodayCount} / 200</strong>
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={triggerAutoApply} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Company</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Google" 
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Role</label>
+              <input 
+                type="text" 
+                placeholder="e.g. Software Engineer" 
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Job Listing URL</label>
+              <input 
+                type="text" 
+                placeholder="e.g. indeed.com/jobs/123" 
+                value={portalUrl}
+                onChange={(e) => setPortalUrl(e.target.value)}
+                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <button 
+                type="submit"
+                disabled={isApplying}
+                className="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-lg transition flex items-center justify-center gap-2"
+              >
+                {isApplying ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
+                Trigger Auto-Apply Agent
+              </button>
+            </div>
+          </form>
+
+          {/* Progress list / Live logs tracker */}
+          <div className="border border-neutral-850 rounded-lg overflow-hidden bg-neutral-950/20">
+            <div className="bg-neutral-900 border-b border-neutral-850 px-4 py-2 flex items-center justify-between">
+              <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <Terminal size={12} className="text-yellow-500" />
+                Live Scraper Console Logs
+              </span>
+              <span className="text-[9px] text-neutral-500">Auto-polling updates</span>
+            </div>
+            
+            <div className="p-4 space-y-4 max-h-[220px] overflow-y-auto font-mono text-[11px] text-neutral-300">
+              {applications.length === 0 ? (
+                <p className="text-neutral-500 text-center py-4">No active applications currently running. Trigger a bot run above.</p>
+              ) : (
+                applications.map((app, index) => (
+                  <div key={index} className="border-b border-neutral-900 pb-3 last:border-0 last:pb-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-white font-bold">{app.role} @ {app.company}</span>
+                      <span className={`px-2 py-0.5 rounded text-[9px] ${
+                        app.status === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-400' :
+                        app.status === 'CONFIRMED' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>{app.status}</span>
+                    </div>
+                    <div className="pl-3 border-l-2 border-neutral-800 space-y-1 text-neutral-400">
+                      {app.logs && app.logs.map((log: string, lIdx: number) => (
+                        <p key={lIdx} className="leading-relaxed">&gt; {log}</p>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel: Email Tracker / Sync */}
+        <div className="glass-panel rounded-xl p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="font-display font-semibold text-lg text-white mb-4 flex items-center gap-2">
+              <Mail size={18} className="text-blue-500" />
+              Employer Email Confirmation Sync
+            </h2>
+            <p className="text-xs text-neutral-400 mb-4 leading-relaxed">
+              Connect your email address to sync application confirmations and responses directly.
+            </p>
+            
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  placeholder="name@example.com" 
+                  value={emailAddress}
+                  onChange={(e) => setEmailAddress(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">IMAP App Password</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••••••••••" 
+                  value={appPassword}
+                  onChange={(e) => setAppPassword(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <button 
+              onClick={syncEmails}
+              disabled={isSyncingEmail}
+              className="w-full py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-lg transition flex items-center justify-center gap-2"
+            >
+              {isSyncingEmail ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              Sync Employer Confirmations
+            </button>
+
+            {/* Email list result */}
+            {syncedEmails.length > 0 && (
+              <div className="mt-4 border-t border-neutral-850 pt-4 space-y-2 max-h-[160px] overflow-y-auto">
+                <span className="text-[10px] text-green-400 font-semibold block mb-2">Successfully Synced Emails:</span>
+                {syncedEmails.map((mail, idx) => (
+                  <div key={idx} className="bg-neutral-950/30 p-2 rounded border border-neutral-900 text-[10px]">
+                    <p className="text-neutral-200 font-bold">{mail.subject}</p>
+                    <p className="text-neutral-400 mt-0.5">{mail.sender}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
@@ -293,3 +554,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

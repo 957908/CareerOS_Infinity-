@@ -124,3 +124,23 @@ async def execute_ingestion_pipeline(resume_id: str, file_name: str, clean_text:
             logger.error(f"Async pipeline failed: {e}")
             await session.rollback()
             raise
+
+@celery_app.task(name="app.workers.tasks.auto_apply_celery_task")
+def auto_apply_celery_task(user_id: str, company: str, role: str, portal_url: str, resume_id: str, job_description: str) -> dict:
+    """
+    Celery worker entrypoint to trigger browser automation.
+    """
+    logger.info(f"Celery triggering auto-apply for {role} at {company}")
+    from app.api.applications import background_apply_task
+    run_async(background_apply_task(user_id, company, role, portal_url, resume_id, job_description, AsyncSessionLocal()))
+    return {"status": "COMPLETED"}
+
+@celery_app.task(name="app.workers.tasks.sync_email_celery_task")
+def sync_email_celery_task(user_id: str, email_address: str = None, app_password: str = None) -> dict:
+    """
+    Celery worker entrypoint to trigger IMAP email scraping.
+    """
+    logger.info("Celery triggering email sync")
+    from app.services.email_service import EmailSyncService
+    run_async(EmailSyncService.sync_confirmation_emails(AsyncSessionLocal(), user_id, email_address=email_address, app_password=app_password))
+    return {"status": "COMPLETED"}
