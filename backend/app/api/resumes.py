@@ -91,7 +91,7 @@ async def upload_resume(
             user_id=str(current_user.id),
             file_url=file.filename,
             raw_text=clean_text,
-            resume_json=profile_data.model_dump(),
+            resume_json=json.loads(profile_data.model_dump_json()),
             embedding=vector
         )
         
