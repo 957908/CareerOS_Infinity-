@@ -11,14 +11,33 @@ from app.api.auth import router as auth_router
 from app.api.resumes import router as resumes_router
 from app.api.jobs import router as jobs_router
 
+from contextlib import asynccontextmanager
+from app.core.database import Base, engine
+from app.models.user import User
+from app.models.resume import Resume
+from app.models.graph import EntityNode, RelationshipEdge
+
 # Setup structured logging immediately
 setup_structured_logging()
 logger = logging.getLogger("app.main")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Lifespan: Initializing database schema and pgvector extension...")
+    try:
+        async with engine.begin() as conn:
+            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Lifespan: Database tables initialized successfully.")
+    except Exception as e:
+        logger.error(f"Lifespan: Error during database initialization: {e}", exc_info=True)
+    yield
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan
 )
 
 # Bind correlation ID tracer and CORS Middlewares
