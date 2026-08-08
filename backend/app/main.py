@@ -15,7 +15,7 @@ from contextlib import asynccontextmanager
 from app.core.database import Base, engine
 from app.models.user import User
 from app.models.resume import Resume
-from app.models.graph import EntityNode, RelationshipEdge
+from app.models.graph import GraphNode, GraphRelationship
 
 # Setup structured logging immediately
 setup_structured_logging()
