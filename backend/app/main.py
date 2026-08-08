@@ -23,15 +23,7 @@ logger = logging.getLogger("app.main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Lifespan: Initializing database schema and pgvector extension...")
-    try:
-        async with engine.begin() as conn:
-            from sqlalchemy import text
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Lifespan: Database tables initialized successfully.")
-    except Exception as e:
-        logger.error(f"Lifespan: Error during database initialization: {e}", exc_info=True)
+    # DDL schema initialization bypassed locally; schemas created via SQL Editor
     yield
 
 app = FastAPI(
