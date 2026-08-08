@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send, Mail, Play, CheckCircle, RefreshCw, Terminal, Activity } from 'lucide-react';
+import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send, Mail, Play, CheckCircle, RefreshCw, Terminal, Activity, Zap, Cpu } from 'lucide-react';
 
 const PORTALS = [
   { id: 'linkedin', name: 'LinkedIn' },
@@ -36,12 +36,20 @@ export default function Dashboard() {
   const [activeFileName, setActiveFileName] = useState('resume.pdf');
   const [resumeId, setResumeId] = useState<string | null>(null);
   
-  // Applications Auto-Apply Bot States
+  // Tab selector for Manual vs Autonomous Apply mode
+  const [applyMode, setApplyMode] = useState<'single' | 'autonomous'>('single');
+
+  // Applications Auto-Apply Bot States (Single Mode)
   const [applications, setApplications] = useState<any[]>([]);
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
   const [portalUrl, setPortalUrl] = useState('');
   const [isApplying, setIsApplying] = useState(false);
+
+  // Autonomous Bot States
+  const [autoKeywords, setAutoKeywords] = useState('Python');
+  const [autoLimit, setAutoLimit] = useState(5);
+  const [isActivatingAuto, setIsActivatingAuto] = useState(false);
   
   // Email Sync States
   const [emailAddress, setEmailAddress] = useState('');
@@ -249,7 +257,7 @@ export default function Dashboard() {
     }
   };
 
-  // Auto-Apply Trigger
+  // Auto-Apply Trigger (Single Mode)
   const triggerAutoApply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!company || !role || !portalUrl) {
@@ -286,6 +294,36 @@ export default function Dashboard() {
       alert("Failed to submit apply request.");
     } finally {
       setIsApplying(false);
+    }
+  };
+
+  // Trigger Autonomous Background Agent Mode
+  const triggerAutonomousMode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsActivatingAuto(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/autonomous-run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          keywords: autoKeywords,
+          limit: Number(autoLimit)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Autonomous activation failed.");
+      }
+
+      alert(`Autonomous Job Hunter Agent activated in background matching keywords: "${autoKeywords}"! Watch the console logs below.`);
+      fetchApplications();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to trigger autonomous run.");
+    } finally {
+      setIsActivatingAuto(false);
     }
   };
 
@@ -507,11 +545,30 @@ export default function Dashboard() {
         
         {/* Left Panel: Auto-Apply Launchpad */}
         <div className="lg:col-span-2 glass-panel rounded-xl p-6 space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="font-display font-semibold text-lg text-white flex items-center gap-2">
-              <Play size={18} className="text-blue-500 animate-pulse" />
-              Automated Job Apply Bot (Daily Quota)
-            </h2>
+          <div className="flex justify-between items-center border-b border-neutral-800 pb-3">
+            <div className="flex items-center gap-4">
+              <h2 className="font-display font-semibold text-lg text-white flex items-center gap-2">
+                <Play size={18} className="text-blue-500 animate-pulse" />
+                Automated Job Apply Agent
+              </h2>
+              {/* Tab Toggles */}
+              <div className="flex rounded bg-neutral-900 border border-neutral-800 p-0.5 text-[11px] font-semibold">
+                <button 
+                  onClick={() => setApplyMode('single')}
+                  className={`px-3 py-1 rounded transition ${applyMode === 'single' ? 'bg-blue-600 text-white' : 'text-neutral-400 hover:text-neutral-200'}`}
+                >
+                  Single Portal Apply
+                </button>
+                <button 
+                  onClick={() => setApplyMode('autonomous')}
+                  className={`px-3 py-1 rounded transition flex items-center gap-1 ${applyMode === 'autonomous' ? 'bg-green-600 text-white' : 'text-neutral-400 hover:text-neutral-200'}`}
+                >
+                  <Cpu size={12} />
+                  Fully Autonomous Mode
+                </button>
+              </div>
+            </div>
+            
             <div className="px-3 py-1 rounded bg-neutral-900 border border-neutral-850 flex items-center gap-2">
               <Activity size={14} className="text-green-500" />
               <span className="text-[11px] text-neutral-300">
@@ -520,48 +577,90 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <form onSubmit={triggerAutoApply} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Company</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Google" 
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Role</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Software Engineer" 
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Job Listing URL</label>
-              <input 
-                type="text" 
-                placeholder="e.g. indeed.com/jobs/123" 
-                value={portalUrl}
-                onChange={(e) => setPortalUrl(e.target.value)}
-                className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="md:col-span-3">
-              <button 
-                type="submit"
-                disabled={isApplying}
-                className="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-lg transition flex items-center justify-center gap-2"
-              >
-                {isApplying ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
-                Trigger Auto-Apply Agent
-              </button>
-            </div>
-          </form>
+          {/* Form Tab 1: Single job apply */}
+          {applyMode === 'single' ? (
+            <form onSubmit={triggerAutoApply} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Company</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Google" 
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Role</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Software Engineer" 
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Job Listing URL</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. indeed.com/jobs/123" 
+                  value={portalUrl}
+                  onChange={(e) => setPortalUrl(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <button 
+                  type="submit"
+                  disabled={isApplying}
+                  className="w-full py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                >
+                  {isApplying ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
+                  Trigger Single Apply Bot
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* Form Tab 2: Autonomous loop run */
+            <form onSubmit={triggerAutonomousMode} className="grid grid-cols-1 md:grid-cols-3 gap-4 border border-green-500/20 p-4 rounded-lg bg-green-500/5">
+              <div className="md:col-span-3 flex items-center gap-2 text-xs text-green-400 font-semibold mb-1">
+                <Zap size={14} />
+                <span>Autonomous Agent Mode: Scrapes, matches, optimizes, and auto-submits.</span>
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Job Keywords</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Python Developer" 
+                  value={autoKeywords}
+                  onChange={(e) => setAutoKeywords(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Application Target Limit</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  max="200"
+                  value={autoLimit}
+                  onChange={(e) => setAutoLimit(Number(e.target.value))}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex items-end">
+                <button 
+                  type="submit"
+                  disabled={isActivatingAuto}
+                  className="w-full py-2 rounded bg-green-600 hover:bg-green-700 text-white font-semibold text-xs shadow-lg transition flex items-center justify-center gap-2"
+                >
+                  {isActivatingAuto ? <RefreshCw size={14} className="animate-spin" /> : <Cpu size={14} />}
+                  Activate Autonomous AI Agent
+                </button>
+              </div>
+            </form>
+          )}
 
           {/* Progress list / Live logs tracker */}
           <div className="border border-neutral-850 rounded-lg overflow-hidden bg-neutral-950/20">

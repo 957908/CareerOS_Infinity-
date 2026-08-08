@@ -191,3 +191,25 @@ async def launch_session(
         portal=payload.portal
     )
     return {"status": "ACCEPTED", "message": f"Browser window launched for {payload.portal}. Close window after logging in."}
+
+class AutonomousRunRequest(BaseModel):
+    keywords: str = "Python"
+    limit: int = 5
+
+@router.post("/autonomous-run", status_code=status.HTTP_202_ACCEPTED)
+async def trigger_autonomous_run(
+    payload: AutonomousRunRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+) -> dict:
+    """
+    Triggers the autonomous job search and application loop in the background.
+    """
+    logger.info(f"API Autonomous: initiating run for keywords: {payload.keywords}")
+    from autonomous_job_hunter import run_autonomous_loop
+    background_tasks.add_task(
+        run_autonomous_loop,
+        keywords=payload.keywords,
+        max_applications=payload.limit
+    )
+    return {"status": "ACCEPTED", "message": "Autonomous job hunting loop scheduled."}
