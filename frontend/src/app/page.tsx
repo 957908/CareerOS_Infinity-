@@ -3,6 +3,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send, Mail, Play, CheckCircle, RefreshCw, Terminal, Activity } from 'lucide-react';
 
+const PORTALS = [
+  { id: 'linkedin', name: 'LinkedIn' },
+  { id: 'indeed', name: 'Indeed' },
+  { id: 'ziprecruiter', name: 'ZipRecruiter' },
+  { id: 'glassdoor', name: 'Glassdoor' },
+  { id: 'monster', name: 'Monster' },
+  { id: 'careerbuilder', name: 'CareerBuilder' },
+  { id: 'dice', name: 'Dice' },
+  { id: 'simplyhired', name: 'SimplyHired' },
+  { id: 'flexjobs', name: 'FlexJobs' },
+  { id: 'weworkremotely', name: 'WeWorkRemotely' },
+  { id: 'wellfound', name: 'Wellfound (AngelList)' },
+  { id: 'hired', name: 'Hired' },
+  { id: 'reed', name: 'Reed (UK)' },
+  { id: 'totaljobs', name: 'Totaljobs (UK)' },
+  { id: 'stepstone', name: 'StepStone (Europe)' },
+  { id: 'naukri', name: 'Naukri (India)' },
+  { id: 'foundit', name: 'Foundit (India)' },
+  { id: 'xing', name: 'Xing (Europe)' },
+  { id: 'roberthalf', name: 'Robert Half' },
+  { id: 'usajobs', name: 'USAJOBS' }
+];
+
 export default function Dashboard() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'parsing' | 'success'>('idle');
@@ -664,8 +687,9 @@ export default function Dashboard() {
                   onChange={(e) => setVaultPortal(e.target.value)}
                   className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="indeed">Indeed</option>
+                  {PORTALS.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -713,35 +737,25 @@ export default function Dashboard() {
           </form>
 
           {/* Stored Credentials List */}
-          <div className="border border-neutral-850 p-4 rounded-lg bg-neutral-950/20 space-y-4">
-            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block border-b border-neutral-850 pb-2">
+          <div className="border border-neutral-850 p-4 rounded-lg bg-neutral-950/20 space-y-4 max-h-[300px] overflow-y-auto">
+            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block border-b border-neutral-850 pb-2 sticky top-0 bg-neutral-955 z-10">
               Saved Portals Status
             </span>
             
             <div className="space-y-3 text-xs">
-              <div className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
-                <div>
-                  <span className="font-semibold text-neutral-200 block">LinkedIn Portal</span>
-                  <span className="text-[10px] text-neutral-500">{storedCredentials.linkedin || "No credentials saved"}</span>
+              {PORTALS.map(p => (
+                <div key={p.id} className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
+                  <div>
+                    <span className="font-semibold text-neutral-200 block">{p.name} Portal</span>
+                    <span className="text-[10px] text-neutral-500">{storedCredentials[p.id] || "No credentials saved"}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                    storedCredentials[p.id] ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                  }`}>
+                    {storedCredentials[p.id] ? "Linked" : "Offline"}
+                  </span>
                 </div>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                  storedCredentials.linkedin ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                }`}>
-                  {storedCredentials.linkedin ? "Linked" : "Offline"}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
-                <div>
-                  <span className="font-semibold text-neutral-200 block">Indeed Portal</span>
-                  <span className="text-[10px] text-neutral-500">{storedCredentials.indeed || "No credentials saved"}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                  storedCredentials.indeed ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                }`}>
-                  {storedCredentials.indeed ? "Linked" : "Offline"}
-                </span>
-              </div>
+              ))}
             </div>
           </div>
 
