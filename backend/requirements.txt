@@ -14,3 +14,4 @@ pymupdf>=1.22.0
 litellm>=1.0.0
 prometheus-client>=0.17.0
 pgvector>=0.2.0
+playwright>=1.40.0
