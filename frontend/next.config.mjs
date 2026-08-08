@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
+const isProd = process.env.NODE_ENV === 'production';
+
 const nextConfig = {
   output: 'export',
   images: {
     unoptimized: true,
   },
-  // Ensure paths map correctly on GitHub Pages subfolder (if repository name is CareerOS_Infinity-)
-  basePath: '/CareerOS_Infinity-',
-  assetPrefix: '/CareerOS_Infinity-/',
+  // Dynamically set basePath to support local runs on root URL and subfolders on GitHub Pages
+  basePath: isProd ? '/CareerOS_Infinity-' : '',
+  assetPrefix: isProd ? '/CareerOS_Infinity-/' : '',
 };
 
 export default nextConfig;
