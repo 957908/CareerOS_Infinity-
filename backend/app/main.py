@@ -26,7 +26,8 @@ async def lifespan(app: FastAPI):
     logger.info("Lifespan: Initializing database schema and pgvector extension...")
     try:
         async with engine.begin() as conn:
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            from sqlalchemy import text
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Lifespan: Database tables initialized successfully.")
     except Exception as e:
