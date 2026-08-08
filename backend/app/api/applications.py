@@ -138,3 +138,56 @@ async def trigger_email_sync(
         app_password=payload.app_password
     )
     return {"status": "SUCCESS", "synced_count": len(synced_messages), "emails": synced_messages}
+
+class CredentialSaveRequest(BaseModel):
+    portal: str
+    username: str
+    password: str
+
+@router.post("/credentials", status_code=status.HTTP_200_OK)
+async def save_credentials(
+    payload: CredentialSaveRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session)
+) -> dict:
+    """
+    Saves encrypted external portal login credentials into the vault.
+    """
+    logger.info(f"API Credentials: saving credentials for {payload.portal}")
+    await CredentialVault.save_portal_credentials(
+        session=session,
+        portal_name=payload.portal,
+        username=payload.username,
+        password=payload.password
+    )
+    return {"status": "SUCCESS", "message": f"Credentials saved for {payload.portal}"}
+
+@router.get("/credentials", status_code=status.HTTP_200_OK)
+async def get_credentials(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session)
+) -> dict:
+    """
+    Retrieves stored usernames list (excluding passwords).
+    """
+    logger.info("API Credentials: listing stored credentials")
+    return await CredentialVault.get_all_stored_usernames(session)
+
+class LaunchSessionRequest(BaseModel):
+    portal: str
+
+@router.post("/launch-session", status_code=status.HTTP_200_OK)
+async def launch_session(
+    payload: LaunchSessionRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user)
+) -> dict:
+    """
+    Launches a headful browser session to cache cookies for bypassing login guards.
+    """
+    logger.info(f"API Launch Session: triggering session launch for {payload.portal}")
+    background_tasks.add_task(
+        BrowserAutomationService.launch_headful_session,
+        portal=payload.portal
+    )
+    return {"status": "ACCEPTED", "message": f"Browser window launched for {payload.portal}. Close window after logging in."}

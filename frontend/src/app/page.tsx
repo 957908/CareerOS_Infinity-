@@ -25,6 +25,14 @@ export default function Dashboard() {
   const [appPassword, setAppPassword] = useState('');
   const [isSyncingEmail, setIsSyncingEmail] = useState(false);
   const [syncedEmails, setSyncedEmails] = useState<any[]>([]);
+
+  // Portal Credentials states
+  const [vaultPortal, setVaultPortal] = useState('linkedin');
+  const [vaultUsername, setVaultUsername] = useState('');
+  const [vaultPassword, setVaultPassword] = useState('');
+  const [storedCredentials, setStoredCredentials] = useState<any>({});
+  const [isSavingCreds, setIsSavingCreds] = useState(false);
+  const [isLaunchingSession, setIsLaunchingSession] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -141,6 +149,83 @@ export default function Dashboard() {
     }
   };
 
+  // Fetch saved portal credentials
+  const fetchCredentials = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/credentials");
+      if (response.ok) {
+        const data = await response.json();
+        setStoredCredentials(data);
+      }
+    } catch (error) {
+      console.error("Error fetching credentials:", error);
+    }
+  };
+
+  // Save Credentials into Secure Encrypted Vault
+  const saveCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vaultUsername || !vaultPassword) {
+      alert("Please enter Username and Password.");
+      return;
+    }
+    setIsSavingCreds(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/credentials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          portal: vaultPortal,
+          username: vaultUsername,
+          password: vaultPassword
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Credentials save failed.");
+      }
+
+      setVaultUsername('');
+      setVaultPassword('');
+      alert(`Credentials encrypted and stored for ${vaultPortal.toUpperCase()}!`);
+      fetchCredentials();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save credentials.");
+    } finally {
+      setIsSavingCreds(false);
+    }
+  };
+
+  // Launch Playwright headful persistent session window
+  const launchBrowserSession = async () => {
+    setIsLaunchingSession(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/applications/launch-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          portal: vaultPortal
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to launch session browser.");
+      }
+
+      alert(`Chromium browser window opened. Log into your ${vaultPortal.toUpperCase()} account, complete security checks, and close the window to save cookies!`);
+    } catch (error) {
+      console.error(error);
+      alert("Could not launch browser window. (Note: Make sure playwright is installed: npx playwright install)");
+    } finally {
+      setIsLaunchingSession(false);
+    }
+  };
+
   // Auto-Apply Trigger
   const triggerAutoApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,6 +299,7 @@ export default function Dashboard() {
   // Auto-poll applications every 3 seconds for live scraper logs updating
   useEffect(() => {
     fetchApplications();
+    fetchCredentials();
     const interval = setInterval(fetchApplications, 3000);
     return () => clearInterval(interval);
   }, [resumeId]);
@@ -551,7 +637,117 @@ export default function Dashboard() {
 
       </div>
 
+      {/* TIER 3 SECTION: Credentials Vault & Playwright Session Manager */}
+      <div className="glass-panel rounded-xl p-6 space-y-6 mt-6">
+        <h2 className="font-display font-semibold text-lg text-white flex items-center gap-2">
+          <Terminal size={18} className="text-blue-500 animate-pulse" />
+          External Portal Credentials Vault & Session Manager
+        </h2>
+        <p className="text-xs text-neutral-400 leading-relaxed">
+          Store external login credentials encrypted in the vault to enable auto-apply capabilities. 
+          Use the **Browser Window** trigger to log in once manually, solve OTP/2FA, and save cookies so the bot can apply to jobs automatically.
+        </p>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Save Credentials Form */}
+          <form onSubmit={saveCredentials} className="space-y-4 lg:col-span-2 border border-neutral-850 p-4 rounded-lg bg-neutral-950/20">
+            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block border-b border-neutral-850 pb-2">
+              Save Encrypted Login Details
+            </span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Target Portal</label>
+                <select 
+                  value={vaultPortal}
+                  onChange={(e) => setVaultPortal(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="indeed">Indeed</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Username / Email</label>
+                <input 
+                  type="text" 
+                  placeholder="email@example.com" 
+                  value={vaultUsername}
+                  onChange={(e) => setVaultUsername(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-neutral-400 font-semibold uppercase mb-1">Portal Password</label>
+                <input 
+                  type="password" 
+                  placeholder="••••••••••••" 
+                  value={vaultPassword}
+                  onChange={(e) => setVaultPassword(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-850 text-xs text-white rounded p-2 outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-2">
+              <button 
+                type="submit"
+                disabled={isSavingCreds}
+                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center gap-2"
+              >
+                {isSavingCreds ? <RefreshCw size={12} className="animate-spin" /> : null}
+                Encrypt & Save Credentials
+              </button>
+              
+              <button 
+                type="button"
+                onClick={launchBrowserSession}
+                disabled={isLaunchingSession}
+                className="px-4 py-2 rounded bg-neutral-850 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 font-semibold text-xs transition flex items-center gap-2"
+              >
+                {isLaunchingSession ? <RefreshCw size={12} className="animate-spin" /> : null}
+                Open Login Browser Window (Bypass OTP/Captcha)
+              </button>
+            </div>
+          </form>
+
+          {/* Stored Credentials List */}
+          <div className="border border-neutral-850 p-4 rounded-lg bg-neutral-950/20 space-y-4">
+            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block border-b border-neutral-850 pb-2">
+              Saved Portals Status
+            </span>
+            
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
+                <div>
+                  <span className="font-semibold text-neutral-200 block">LinkedIn Portal</span>
+                  <span className="text-[10px] text-neutral-500">{storedCredentials.linkedin || "No credentials saved"}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                  storedCredentials.linkedin ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {storedCredentials.linkedin ? "Linked" : "Offline"}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
+                <div>
+                  <span className="font-semibold text-neutral-200 block">Indeed Portal</span>
+                  <span className="text-[10px] text-neutral-500">{storedCredentials.indeed || "No credentials saved"}</span>
+                </div>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                  storedCredentials.indeed ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                }`}>
+                  {storedCredentials.indeed ? "Linked" : "Offline"}
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   );
 }
-
