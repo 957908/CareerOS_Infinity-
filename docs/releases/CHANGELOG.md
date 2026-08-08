@@ -1,4 +1,4 @@
-# Changelog
+# Changelog - Releases Log
 
 All notable changes to the CareerOS Infinity project will be documented in this file.
 
