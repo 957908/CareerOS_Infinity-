@@ -14,7 +14,21 @@ CareerOS Infinity **v0.3.2-hardened-alpha** establishes the hardened, production
 
 ---
 
-## 3. Scope of Staging Deployment
+## 3. Closed Beta Success Exit Criteria
+For the platform to proceed from Closed Beta to Stabilization and v1.0.0 Release Candidate status, the following quality metrics must be satisfied:
+*   **Parsing Success:** >= 95% Resume Parsing Success.
+*   **Match Accuracy:** >= 95% ATS Match Accuracy (for the validated benchmark set).
+*   **Error Rate:** < 1% Critical Errors.
+*   **Load Performance:** Stable under target concurrent load.
+*   **Security:** No P0 Security Issues.
+*   **User Feedback:** Positive User Satisfaction Trend.
+*   **Bugs Status:** All P0/P1 bugs resolved.
+*   **Observability:** Monitoring & Alerts validated.
+*   **Governance:** CEO Sign-off.
+
+---
+
+## 4. Scope of Staging Deployment
 *   **Deployment target:** EKS / local Kubernetes staging namespace.
 *   **Ingress endpoint:** `http://staging.careeros-infinity.local/`
 *   **Verification:** Verified via locust load tests (500 concurrent users) and UAT scripts.
