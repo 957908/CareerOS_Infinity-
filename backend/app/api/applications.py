@@ -10,6 +10,7 @@ from app.repositories.graph_repository import PostgreSQLGraphRepository
 from app.services.browser_automation import BrowserAutomationService
 from app.services.email_service import EmailSyncService
 from app.services.resume_optimizer import ResumeOptimizerService
+from app.services.credential_vault import CredentialVault
 
 logger = logging.getLogger("app.api.applications")
 router = APIRouter(prefix="/applications", tags=["Job Applications Auto-Apply"])
