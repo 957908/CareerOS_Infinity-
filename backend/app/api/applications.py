@@ -169,10 +169,25 @@ async def get_credentials(
     session: AsyncSession = Depends(get_db_session)
 ) -> dict:
     """
-    Retrieves stored usernames list (excluding passwords).
+    Retrieves stored usernames list (excluding passwords) and active session cookie status.
     """
-    logger.info("API Credentials: listing stored credentials")
-    return await CredentialVault.get_all_stored_usernames(session)
+    logger.info("API Credentials: listing stored credentials and active sessions")
+    usernames = await CredentialVault.get_all_stored_usernames(session)
+    sessions = {}
+    from app.services.browser_automation import BrowserAutomationService
+    portals = ["linkedin", "indeed", "ziprecruiter", "glassdoor", "monster", "careerbuilder", "dice", "simplyhired", "flexjobs", "weworkremotely", "wellfound", "hired", "reed", "totaljobs", "stepstone", "naukri", "foundit", "xing", "roberthalf", "usajobs"]
+    for p in portals:
+        profile_dir = BrowserAutomationService._get_profile_dir(p)
+        has_session = False
+        if os.path.exists(profile_dir):
+            files = os.listdir(profile_dir)
+            if len(files) > 0:
+                has_session = True
+        sessions[p] = has_session
+    return {
+        "credentials": usernames,
+        "sessions": sessions
+    }
 
 class LaunchSessionRequest(BaseModel):
     portal: str

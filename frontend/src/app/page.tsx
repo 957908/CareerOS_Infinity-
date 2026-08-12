@@ -62,6 +62,7 @@ export default function Dashboard() {
   const [vaultUsername, setVaultUsername] = useState('');
   const [vaultPassword, setVaultPassword] = useState('');
   const [storedCredentials, setStoredCredentials] = useState<any>({});
+  const [storedSessions, setStoredSessions] = useState<any>({});
   const [isSavingCreds, setIsSavingCreds] = useState(false);
   const [isLaunchingSession, setIsLaunchingSession] = useState(false);
   
@@ -180,13 +181,14 @@ export default function Dashboard() {
     }
   };
 
-  // Fetch saved portal credentials
+  // Fetch saved portal credentials and active session states
   const fetchCredentials = async () => {
     try {
       const response = await fetch("http://localhost:8000/api/v1/applications/credentials");
       if (response.ok) {
         const data = await response.json();
-        setStoredCredentials(data);
+        setStoredCredentials(data.credentials || {});
+        setStoredSessions(data.sessions || {});
       }
     } catch (error) {
       console.error("Error fetching credentials:", error);
@@ -249,6 +251,15 @@ export default function Dashboard() {
       }
 
       alert(`Chromium browser window opened. Log into your ${vaultPortal.toUpperCase()} account, complete security checks, and close the window to save cookies!`);
+      
+      // Periodically fetch credentials list to detect when browser closes and cookie files save
+      let attempts = 0;
+      const checkInterval = setInterval(async () => {
+        attempts++;
+        await fetchCredentials();
+        if (attempts > 30) clearInterval(checkInterval);
+      }, 4000);
+      
     } catch (error) {
       console.error(error);
       alert("Could not launch browser window. (Note: Make sure playwright is installed: npx playwright install)");
@@ -569,7 +580,7 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <div className="px-3 py-1 rounded bg-neutral-900 border border-neutral-850 flex items-center gap-2">
+            <div className="px-3 py-1 rounded bg-neutral-900 border border-neutral-855 flex items-center gap-2">
               <Activity size={14} className="text-green-500" />
               <span className="text-[11px] text-neutral-300">
                 Applied Today: <strong className="text-white text-xs">{appliedTodayCount} / 200</strong>
@@ -747,7 +758,7 @@ export default function Dashboard() {
               <div className="mt-4 border-t border-neutral-850 pt-4 space-y-2 max-h-[160px] overflow-y-auto">
                 <span className="text-[10px] text-green-400 font-semibold block mb-2">Successfully Synced Emails:</span>
                 {syncedEmails.map((mail, idx) => (
-                  <div key={idx} className="bg-neutral-950/30 p-2 rounded border border-neutral-900 text-[10px]">
+                  <div key={idx} className="bg-neutral-955 p-2 rounded border border-neutral-900 text-[10px]">
                     <p className="text-neutral-200 font-bold">{mail.subject}</p>
                     <p className="text-neutral-400 mt-0.5">{mail.sender}</p>
                   </div>
@@ -827,7 +838,7 @@ export default function Dashboard() {
                 type="button"
                 onClick={launchBrowserSession}
                 disabled={isLaunchingSession}
-                className="px-4 py-2 rounded bg-neutral-850 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 font-semibold text-xs transition flex items-center gap-2"
+                className="px-4 py-2 rounded bg-neutral-850 hover:bg-neutral-850 text-neutral-200 border border-neutral-700 font-semibold text-xs transition flex items-center gap-2"
               >
                 {isLaunchingSession ? <RefreshCw size={12} className="animate-spin" /> : null}
                 Open Login Browser Window (Bypass OTP/Captcha)
@@ -846,12 +857,14 @@ export default function Dashboard() {
                 <div key={p.id} className="flex justify-between items-center bg-neutral-900/50 p-2.5 rounded border border-neutral-850">
                   <div>
                     <span className="font-semibold text-neutral-200 block">{p.name} Portal</span>
-                    <span className="text-[10px] text-neutral-500">{storedCredentials[p.id] || "No credentials saved"}</span>
+                    <span className="text-[10px] text-neutral-500 font-mono">
+                      {storedCredentials[p.id] || (storedSessions[p.id] ? "Session Active" : "No credentials saved")}
+                    </span>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                    storedCredentials[p.id] ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                    storedCredentials[p.id] || storedSessions[p.id] ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                   }`}>
-                    {storedCredentials[p.id] ? "Linked" : "Offline"}
+                    {storedCredentials[p.id] || storedSessions[p.id] ? "Linked" : "Offline"}
                   </span>
                 </div>
               ))}

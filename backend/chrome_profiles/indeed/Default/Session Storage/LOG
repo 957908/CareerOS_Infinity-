@@ -1,3 +1,2 @@
-2026/08/12-21:33:35.670 1c44 Reusing MANIFEST C:\Users\kadam\Downloads\CareerOS\backend\chrome_profiles\indeed\Default\Session Storage/MANIFEST-000001
-2026/08/12-21:33:35.672 1c44 Recovering log #3
-2026/08/12-21:33:35.681 1c44 Reusing old log C:\Users\kadam\Downloads\CareerOS\backend\chrome_profiles\indeed\Default\Session Storage/000003.log 
+2026/08/12-21:39:07.379 3bc4 Creating DB C:\Users\kadam\Downloads\CareerOS\backend\chrome_profiles\indeed\Default\Session Storage since it was missing.
+2026/08/12-21:39:07.407 3bc4 Reusing MANIFEST C:\Users\kadam\Downloads\CareerOS\backend\chrome_profiles\indeed\Default\Session Storage/MANIFEST-000001
