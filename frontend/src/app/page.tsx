@@ -4,26 +4,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Briefcase, FileText, BarChart2, MessageSquare, Send, Mail, Play, CheckCircle, RefreshCw, Terminal, Activity, Zap, Cpu } from 'lucide-react';
 
 const PORTALS = [
-  { id: 'linkedin', name: 'LinkedIn' },
-  { id: 'indeed', name: 'Indeed' },
-  { id: 'ziprecruiter', name: 'ZipRecruiter' },
-  { id: 'glassdoor', name: 'Glassdoor' },
-  { id: 'monster', name: 'Monster' },
-  { id: 'careerbuilder', name: 'CareerBuilder' },
-  { id: 'dice', name: 'Dice' },
-  { id: 'simplyhired', name: 'SimplyHired' },
-  { id: 'flexjobs', name: 'FlexJobs' },
-  { id: 'weworkremotely', name: 'WeWorkRemotely' },
+  { id: 'linkedin', name: 'LinkedIn India' },
+  { id: 'indeed', name: 'Indeed India' },
+  { id: 'naukri', name: 'Naukri.com' },
+  { id: 'foundit', name: 'Foundit (Monster)' },
+  { id: 'shine', name: 'Shine.com' },
+  { id: 'timesjobs', name: 'TimesJobs' },
+  { id: 'internshala', name: 'Internshala' },
   { id: 'wellfound', name: 'Wellfound (AngelList)' },
-  { id: 'hired', name: 'Hired' },
-  { id: 'reed', name: 'Reed (UK)' },
-  { id: 'totaljobs', name: 'Totaljobs (UK)' },
-  { id: 'stepstone', name: 'StepStone (Europe)' },
-  { id: 'naukri', name: 'Naukri (India)' },
-  { id: 'foundit', name: 'Foundit (India)' },
-  { id: 'xing', name: 'Xing (Europe)' },
-  { id: 'roberthalf', name: 'Robert Half' },
-  { id: 'usajobs', name: 'USAJOBS' }
+  { id: 'glassdoor', name: 'Glassdoor India' },
+  { id: 'apna', name: 'Apna App' },
+  { id: 'workindia', name: 'WorkIndia' },
+  { id: 'hired', name: 'Hired India' },
+  { id: 'cutshort', name: 'Cutshort' },
+  { id: 'instahyre', name: 'Instahyre' },
+  { id: 'placementindia', name: 'Placement India' },
+  { id: 'freshersworld', name: 'Freshersworld' },
+  { id: 'freejobalert', name: 'FreeJobAlert' },
+  { id: 'firstjob', name: 'FirstJob' },
+  { id: 'upwork', name: 'Upwork India' },
+  { id: 'jobstone', name: 'Jobstone India' }
 ];
 
 export default function Dashboard() {
@@ -541,7 +541,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <span className="text-neutral-400 font-semibold block mb-1">AI Reasoning Advice:</span>
-                    <p className="text-neutral-300 leading-relaxed text-[11px] bg-neutral-950/30 p-2 rounded border border-neutral-850">{matchResult.recommendation}</p>
+                    <p className="text-neutral-300 leading-relaxed text-[11px] bg-neutral-955 p-2 rounded border border-neutral-855">{matchResult.recommendation}</p>
                   </div>
                 </div>
               </div>

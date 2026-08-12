@@ -175,7 +175,7 @@ async def get_credentials(
     usernames = await CredentialVault.get_all_stored_usernames(session)
     sessions = {}
     from app.services.browser_automation import BrowserAutomationService
-    portals = ["linkedin", "indeed", "ziprecruiter", "glassdoor", "monster", "careerbuilder", "dice", "simplyhired", "flexjobs", "weworkremotely", "wellfound", "hired", "reed", "totaljobs", "stepstone", "naukri", "foundit", "xing", "roberthalf", "usajobs"]
+    portals = ["linkedin", "indeed", "naukri", "foundit", "shine", "timesjobs", "internshala", "wellfound", "glassdoor", "apna", "workindia", "hired", "cutshort", "instahyre", "placementindia", "freshersworld", "freejobalert", "firstjob", "upwork", "jobstone"]
     for p in portals:
         profile_dir = BrowserAutomationService._get_profile_dir(p)
         has_session = False

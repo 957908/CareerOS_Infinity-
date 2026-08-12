@@ -39,3 +39,7 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 .DS_Store
+
+# Chrome profiles (contains local sessions & tokens)
+backend/chrome_profiles/
+chrome_profiles/
