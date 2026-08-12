@@ -23,7 +23,7 @@ const PORTALS = [
   { id: 'freejobalert', name: 'FreeJobAlert' },
   { id: 'firstjob', name: 'FirstJob' },
   { id: 'upwork', name: 'Upwork India' },
-  { id: 'jobstone', name: 'Jobstone India' }
+  { id: 'unstop', name: 'Unstop' }
 ];
 
 export default function Dashboard() {
