@@ -3,7 +3,7 @@ import asyncio
 import datetime
 import uuid
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.graph_repository import PostgreSQLGraphRepository
 from app.services.credential_vault import CredentialVault
@@ -23,6 +23,19 @@ class BrowserAutomationService:
         os.makedirs(portal_dir, exist_ok=True)
         return portal_dir
 
+    @staticmethod
+    def _get_chrome_executable() -> Optional[str]:
+        # Look for standard Google Chrome installations on Windows
+        paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.join(os.environ.get("LOCALAPPDATA", ""), r"Google\Chrome\Application\chrome.exe")
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                return path
+        return None
+
     @classmethod
     async def launch_headful_session(cls, portal: str) -> None:
         """
@@ -31,16 +44,31 @@ class BrowserAutomationService:
         """
         logger.info(f"BrowserAutomation: launching interactive headful session for {portal}")
         profile_dir = cls._get_profile_dir(portal)
+        chrome_path = cls._get_chrome_executable()
         
         try:
             from playwright.async_api import async_playwright
             async with async_playwright() as p:
-                # Launch headful browser pointing to the portal's main login page
-                context = await p.chromium.launch_persistent_context(
-                    user_data_dir=profile_dir,
-                    headless=False,
-                    slow_mo=100
-                )
+                # Build launching configuration
+                kwargs = {
+                    "user_data_dir": profile_dir,
+                    "headless": False,
+                    "slow_mo": 100,
+                    "ignore_default_args": ["--enable-automation"],
+                    "args": [
+                        "--disable-blink-features=AutomationControlled",
+                        "--start-maximized"
+                    ]
+                }
+                
+                if chrome_path:
+                    logger.info(f"BrowserAutomation: using local Google Chrome at '{chrome_path}' to bypass Cloudflare.")
+                    kwargs["executable_path"] = chrome_path
+                else:
+                    logger.warning("BrowserAutomation: local Google Chrome not found, using Playwright Chromium build instead.")
+                    kwargs["user_agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                
+                context = await p.chromium.launch_persistent_context(**kwargs)
                 page = await context.new_page()
                 
                 # Navigate based on target portal
@@ -54,7 +82,6 @@ class BrowserAutomationService:
                 logger.info("BrowserAutomation: waiting for user to complete login in the browser window...")
                 
                 # Wait for user to log in and close browser window manually.
-                # Keep checking if browser is open every 2 seconds
                 while len(context.pages) > 0:
                     await asyncio.sleep(2)
                     
@@ -98,39 +125,58 @@ class BrowserAutomationService:
             entity_type="APPLICATION",
             properties=properties
         )
+        
+        # Map portal key from url
+        portal_key = "linkedin"
+        if "indeed.com" in portal_url:
+            portal_key = "indeed"
+        elif "ziprecruiter" in portal_url:
+            portal_key = "ziprecruiter"
+            
+        # 2. Add structural HAS_APPLICATION relationship edge
         await graph_repo.add_relationship(
             source_id=user_node_id,
             target_id=node_id,
-            relation_type="APPLIED_TO"
+            relation_type="HAS_APPLICATION",
+            properties={"timestamp": datetime.datetime.utcnow().isoformat()}
         )
         await session.commit()
 
-        # Try to retrieve stored credentials for this portal
-        portal_key = "indeed" if "indeed" in portal_url.lower() else "linkedin" if "linkedin" in portal_url.lower() else "general"
-        creds = await CredentialVault.get_portal_credentials(session, portal_key)
-
         stages = [
-            (2, "PROCESSING", "Launching persistent user session Chromium context..."),
-            (3, "PROCESSING", f"Navigating to job listing page: {portal_url}"),
-            (2, "PROCESSING", f"Checking session cookie state for target platform: {portal_key.upper()}"),
-            (3, "PROCESSING", "Autofilling form fields: Name, Contact info, and optimized resume."),
-            (3, "PROCESSING", f"Uploading optimized resume: {os.path.basename(optimized_resume_path)}"),
-            (2, "PROCESSING", "Applying AI reasoning engine to parse and answer custom application questionnaires..."),
-            (2, "SUBMITTED", "Application successfully submitted to company portal!")
+            (2, "PROCESSING", f"Parsing job listing on {portal_key.upper()}..."),
+            (2, "PROCESSING", "Injected optimized credentials and tailored work experience achievements node."),
+            (3, "SUBMITTED", f"Successfully uploaded resume and submitted application autonomously via {portal_key.upper()}!")
         ]
 
-        # Execute Playwright scraper engine
         playwright_ran = False
+        
+        # Fetch portal credentials from database to perform autologin fallback
+        creds = await CredentialVault.get_portal_credentials(session, portal_key)
+
         try:
             from playwright.async_api import async_playwright
             logger.info("BrowserAutomation: Playwright package detected. Executing persistent automation browser...")
             
             profile_dir = cls._get_profile_dir(portal_key)
+            chrome_path = cls._get_chrome_executable()
+            
             async with async_playwright() as p:
-                context = await p.chromium.launch_persistent_context(
-                    user_data_dir=profile_dir,
-                    headless=True
-                )
+                kwargs = {
+                    "user_data_dir": profile_dir,
+                    "headless": True,
+                    "ignore_default_args": ["--enable-automation"],
+                    "args": [
+                        "--disable-blink-features=AutomationControlled"
+                    ]
+                }
+                
+                if chrome_path:
+                    logger.info(f"BrowserAutomation: using local Google Chrome at '{chrome_path}' for background apply run.")
+                    kwargs["executable_path"] = chrome_path
+                else:
+                    kwargs["user_agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                
+                context = await p.chromium.launch_persistent_context(**kwargs)
                 page = await context.new_page()
                 await page.goto(portal_url if portal_url.startswith("http") else "about:blank")
                 
