@@ -42,6 +42,10 @@ class IGraphRepository(abc.ABC):
     ) -> List[Tuple[str, float]]:
         pass
 
+    @abc.abstractmethod
+    async def get_entities_by_type(self, entity_type: str) -> List[GraphNode]:
+        pass
+
 
 class PostgreSQLGraphRepository(IGraphRepository):
     """
@@ -49,6 +53,12 @@ class PostgreSQLGraphRepository(IGraphRepository):
     """
     def __init__(self, session: AsyncSession):
         self.session = session
+
+    async def get_entities_by_type(self, entity_type: str) -> List[GraphNode]:
+        logger.info(f"PostgreSQLGraphRepository: fetching nodes of type {entity_type}")
+        query = select(GraphNode).filter(GraphNode.entity_type == entity_type)
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
 
     async def add_entity_node(
         self,
