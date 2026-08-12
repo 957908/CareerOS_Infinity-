@@ -180,17 +180,17 @@ class LaunchSessionRequest(BaseModel):
 @router.post("/launch-session", status_code=status.HTTP_200_OK)
 async def launch_session(
     payload: LaunchSessionRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user)
 ) -> dict:
     """
     Launches a headful browser session to cache cookies for bypassing login guards.
     """
-    logger.info(f"API Launch Session: triggering session launch for {payload.portal}")
-    background_tasks.add_task(
-        BrowserAutomationService.launch_headful_session,
-        portal=payload.portal
-    )
+    import subprocess
+    import sys
+    logger.info(f"API Launch Session: triggering session launch for {payload.portal} in separate process")
+    cmd = [sys.executable, "-m", "app.services.browser_automation", "--portal", payload.portal]
+    backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    subprocess.Popen(cmd, cwd=backend_dir)
     return {"status": "ACCEPTED", "message": f"Browser window launched for {payload.portal}. Close window after logging in."}
 
 class AutonomousRunRequest(BaseModel):

@@ -173,3 +173,14 @@ class BrowserAutomationService:
                 logger.info(f"BrowserAutomation [{role} @ {company}]: {log_message}")
 
         return application_id
+
+
+if __name__ == "__main__":
+    import sys
+    import argparse
+    parser = argparse.ArgumentParser(description="Launch headful browser session")
+    parser.add_argument("--portal", type=str, required=True, help="Target portal name")
+    args = parser.parse_args()
+    
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(BrowserAutomationService.launch_headful_session(args.portal))
