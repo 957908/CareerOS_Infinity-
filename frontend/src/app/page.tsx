@@ -701,6 +701,14 @@ export default function Dashboard() {
                         <p key={lIdx} className="leading-relaxed">&gt; {log}</p>
                       ))}
                     </div>
+                    {app.tailored_resume && (
+                      <details className="mt-2 text-[10px] text-neutral-400 bg-neutral-900/30 p-2 rounded border border-neutral-850 cursor-pointer">
+                        <summary className="font-semibold text-neutral-300 hover:text-white select-none">View Tailored Resume Text (100% ATS score version)</summary>
+                        <pre className="mt-1 whitespace-pre-wrap font-sans text-neutral-300 bg-neutral-950 p-2 rounded max-h-[150px] overflow-y-auto leading-relaxed border border-neutral-900">
+                          {app.tailored_resume}
+                        </pre>
+                      </details>
+                    )}
                   </div>
                 ))
               )}

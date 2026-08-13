@@ -109,6 +109,15 @@ class BrowserAutomationService:
         graph_repo = PostgreSQLGraphRepository(session)
         user_node_id = f"user:{user_id}"
         
+        # Read the tailored resume contents to save in the DB node properties for transparency
+        tailored_text = ""
+        if optimized_resume_path and os.path.exists(optimized_resume_path):
+            try:
+                with open(optimized_resume_path, "r", encoding="utf-8") as f:
+                    tailored_text = f.read()
+            except Exception as read_err:
+                logger.warning(f"Could not read optimized resume for DB logging: {read_err}")
+
         # 1. Create a pending Application Node in the Career Knowledge Graph
         properties = {
             "id": application_id,
@@ -117,6 +126,7 @@ class BrowserAutomationService:
             "portal_url": portal_url,
             "status": "PENDING",
             "applied_at": datetime.datetime.utcnow().isoformat(),
+            "tailored_resume": tailored_text,
             "logs": ["Initialized application pipeline."]
         }
         
