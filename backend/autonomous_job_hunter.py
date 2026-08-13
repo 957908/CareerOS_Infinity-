@@ -45,7 +45,12 @@ async def run_autonomous_loop(keywords: str, max_applications: int):
         logger.info("Retrieving your parsed resume profile from the database...")
         # Get first resume
         from sqlalchemy import select
-        result = await session.execute(select(Resume).filter(Resume.user_id == user_id).limit(1))
+        result = await session.execute(
+            select(Resume)
+            .filter(Resume.user_id == user_id)
+            .order_by(Resume.created_at.desc())
+            .limit(1)
+        )
         resume = result.scalar_one_or_none()
         
         if not resume:

@@ -149,3 +149,34 @@ async def upload_resume(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ingestion pipeline error: {str(e)}"
         )
+
+@router.get("/latest", status_code=status.HTTP_200_OK)
+async def get_latest_resume(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db_session)
+) -> dict:
+    """
+    Retrieves the user's latest uploaded resume.
+    """
+    from sqlalchemy import select
+    from app.models.resume import Resume
+    
+    result = await session.execute(
+        select(Resume)
+        .filter(Resume.user_id == current_user.id)
+        .order_by(Resume.created_at.desc())
+        .limit(1)
+    )
+    resume = result.scalar_one_or_none()
+    
+    if not resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resume uploaded yet."
+        )
+        
+    return {
+        "resume_id": str(resume.id),
+        "filename": resume.file_url,
+        "created_at": resume.created_at.isoformat()
+    }

@@ -195,6 +195,21 @@ export default function Dashboard() {
     }
   };
 
+  // Fetch the latest uploaded resume from the DB on mount
+  const fetchLatestResume = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/v1/resumes/latest");
+      if (response.ok) {
+        const data = await response.json();
+        setResumeId(data.resume_id);
+        setActiveFileName(data.filename);
+        setResumeVersion('v2');
+      }
+    } catch (error) {
+      console.log("No active uploaded resume found, using default seed data.");
+    }
+  };
+
   // Save Credentials into Secure Encrypted Vault
   const saveCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,6 +382,10 @@ export default function Dashboard() {
       setIsSyncingEmail(false);
     }
   };
+
+  useEffect(() => {
+    fetchLatestResume();
+  }, []);
 
   // Auto-poll applications every 3 seconds for live scraper logs updating
   useEffect(() => {
