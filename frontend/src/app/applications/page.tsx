@@ -6,12 +6,7 @@ import {
   Send, 
   CheckCircle2, 
   Clock, 
-  AlertTriangle, 
   ArrowRight, 
-  Filter, 
-  ShieldCheck,
-  Building2,
-  FileCheck2,
   XCircle
 } from 'lucide-react';
 
@@ -41,8 +36,8 @@ export default function ApplicationTrackerPage() {
   // Filter application items
   const filteredApps = applications.filter((app) => {
     if (filter === 'NEEDS_APPROVAL') return app.status === 'AWAITING_FINAL_APPROVAL' || app.status === 'RESUME_READY';
-    if (filter === 'IN_PROGRESS') return app.status === 'AUTOMATION_RUNNING' || app.status === 'FORM_FILLED' || app.status === 'DRAFT';
-    if (filter === 'VERIFIED') return app.status === 'SUBMITTED_VERIFIED' || app.status === 'SUBMITTED';
+    if (filter === 'IN_PROGRESS') return app.status === 'AUTOMATION_RUNNING' || app.status === 'FORM_FILLED' || app.status === 'DRAFT' || app.status === 'SUBMITTED';
+    if (filter === 'VERIFIED') return app.status === 'SUBMITTED_VERIFIED';
     if (filter === 'FAILED') return app.status === 'FAILED' || app.status === 'ERROR';
     return true;
   });
@@ -68,8 +63,7 @@ export default function ApplicationTrackerPage() {
           <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">RESUME_READY</span> →
           <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">LEVEL 1: USER_APPROVED</span> →
           <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">AUTOMATION_RUNNING</span> →
-          <span className="px-2 py-0.5 rounded bg-neutral-800 border border-neutral-700">FORM_FILLED</span> →
-          <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">LEVEL 2: AWAITING_FINAL_APPROVAL</span> →
+          <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">SUBMITTED (Unverified) 🟡</span> →
           <span className="px-2 py-0.5 bg-emerald-950 text-emerald-400 border border-emerald-800 font-bold">SUBMITTED_VERIFIED 🟢</span>
         </div>
       </div>
@@ -79,7 +73,7 @@ export default function ApplicationTrackerPage() {
         {[
           { key: 'ALL', label: 'All Applications' },
           { key: 'NEEDS_APPROVAL', label: 'Needs Your Approval' },
-          { key: 'IN_PROGRESS', label: 'In Progress' },
+          { key: 'IN_PROGRESS', label: 'In Progress / Unverified' },
           { key: 'VERIFIED', label: 'Verified Success 🟢' },
           { key: 'FAILED', label: 'Failed 🔴' },
         ].map((tab) => (
@@ -105,7 +99,8 @@ export default function ApplicationTrackerPage() {
           <div className="py-12 text-center text-xs text-neutral-500">No applications match selected filter.</div>
         ) : (
           filteredApps.map((app) => {
-            const isVerified = app.status === 'SUBMITTED_VERIFIED' || app.status === 'SUBMITTED';
+            // STRICT INVARIANT: ONLY SUBMITTED_VERIFIED gets the green badge!
+            const isVerified = app.status === 'SUBMITTED_VERIFIED';
             const isFailed = app.status === 'FAILED' || app.status === 'ERROR';
 
             return (
@@ -124,18 +119,22 @@ export default function ApplicationTrackerPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {/* Honest Status Badge: ONLY SUBMITTED_VERIFIED is Green! */}
+                  {/* Strict Honest Status Badge: ONLY SUBMITTED_VERIFIED is Green! */}
                   {isVerified ? (
                     <span className="px-3 py-1 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold flex items-center gap-1">
-                      <CheckCircle2 size={12} /> SUBMITTED_VERIFIED
+                      <CheckCircle2 size={12} /> SUBMITTED_VERIFIED 🟢
                     </span>
                   ) : isFailed ? (
                     <span className="px-3 py-1 rounded-full bg-rose-950 text-rose-400 border border-rose-800 text-xs font-bold flex items-center gap-1">
-                      <XCircle size={12} /> FAILED
+                      <XCircle size={12} /> FAILED 🔴
+                    </span>
+                  ) : app.status === 'SUBMITTED' ? (
+                    <span className="px-3 py-1 rounded-full bg-amber-950 text-amber-300 border border-amber-800 text-xs font-medium flex items-center gap-1">
+                      <Clock size={12} /> SUBMITTED (Unverified) 🟡
                     </span>
                   ) : (
                     <span className="px-3 py-1 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 text-xs font-medium flex items-center gap-1">
-                      <Clock size={12} className="text-amber-400" /> {app.status || 'IN_PROGRESS'}
+                      <Clock size={12} className="text-neutral-400" /> {app.status || 'IN_PROGRESS'}
                     </span>
                   )}
 

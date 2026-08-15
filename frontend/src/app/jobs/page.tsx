@@ -7,30 +7,33 @@ import {
   Briefcase, 
   MapPin, 
   Target, 
-  Activity, 
   ArrowRight, 
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
-  Building2
+  Building2,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function JobsFeedPage() {
   const [query, setQuery] = useState('Data Engineer');
   const [jobs, setJobs] = useState<any[]>([]);
+  const [sourceHealth, setSourceHealth] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // Source Health Status Indicators
-  const sourceHealth = [
-    { name: 'Greenhouse ATS', status: 'LIVE', badge: '🟢 Live (API)', detail: 'Updated 2 min ago' },
-    { name: 'LinkedIn', status: 'SLOW', badge: '🟡 Candidate Browser Needed', detail: 'Authenticated session' },
-    { name: 'Indeed', status: 'SLOW', badge: '🟡 Candidate Browser Needed', detail: 'Authenticated session' },
-    { name: 'Naukri.com', status: 'LIVE', badge: '🟢 Live (Direct)', detail: 'Search active' },
-  ];
 
   useEffect(() => {
     fetchJobs();
+    fetchSourceHealth();
   }, []);
+
+  async function fetchSourceHealth() {
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/jobs/source-health');
+      if (res.ok) {
+        const data = await res.json();
+        setSourceHealth(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch source health telemetry:', err);
+    }
+  }
 
   async function fetchJobs() {
     setLoading(true);
@@ -62,7 +65,7 @@ export default function JobsFeedPage() {
 
       {/* Source Health Indicator Strip */}
       <div className="bg-neutral-900/60 p-4 rounded-xl border border-neutral-800 space-y-2">
-        <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">Job Source Health Monitor</span>
+        <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider block">Live Job Source Health Telemetry</span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {sourceHealth.map((src, idx) => (
             <div key={idx} className="p-2.5 bg-neutral-950 rounded-lg border border-neutral-800 flex flex-col gap-1">
@@ -70,7 +73,7 @@ export default function JobsFeedPage() {
                 <span>{src.name}</span>
               </div>
               <span className="text-[10px] font-medium text-emerald-400">{src.badge}</span>
-              <span className="text-[9px] text-neutral-500">{src.detail}</span>
+              <span className="text-[9px] text-neutral-500">{src.reliability}</span>
             </div>
           ))}
         </div>

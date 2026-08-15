@@ -7,19 +7,18 @@ import {
   ShieldCheck, 
   CheckCircle2, 
   Clock, 
-  AlertTriangle, 
   Terminal, 
   MailCheck, 
   ThumbsUp,
-  XCircle,
-  Building2
+  Building2,
+  AlertCircle
 } from 'lucide-react';
 
 export default function ApplicationDetailPage({ params }: { params: { id: string } }) {
   const [app, setApp] = useState<any>(null);
-  const [level1Approved, setLevel1Approved] = useState(true);
   const [level2Approved, setLevel2Approved] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [emailSyncResult, setEmailSyncResult] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([
     'BROWSER_PROCESS_STARTED',
     'CONTEXT_CREATED',
@@ -56,25 +55,47 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
       });
       if (res.ok) {
         setApp((prev: any) => ({ ...prev, status: 'SUBMITTED' }));
-        setLogs(prev => [...prev, 'USER_CONFIRMED_SUBMIT: Candidate granted Level 2 final submission approval.']);
+        setLogs(prev => [...prev, 'USER_CONFIRMED_SUBMIT: Candidate granted Level 2 submission approval. Status = SUBMITTED (Unverified).']);
       }
     } catch (err) {
       console.error('Level 2 submission error:', err);
     }
   }
 
+  // 100% Authentic Email IMAP Sync API Call (No mock setTimeout!)
   async function handleVerifyViaEmail() {
     setVerifyingEmail(true);
+    setEmailSyncResult(null);
     try {
-      await new Promise(r => setTimeout(r, 1200));
-      setApp((prev: any) => ({ ...prev, status: 'SUBMITTED_VERIFIED' }));
-      setLogs(prev => [...prev, 'EMAIL_CONFIRMED: Automated IMAP sync verified employer confirmation receipt.']);
+      const res = await fetch('http://localhost:8000/api/v1/applications/sync-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ application_id: params.id, company: app?.company })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.verified || data.emails_matched > 0) {
+          setApp((prev: any) => ({ ...prev, status: 'SUBMITTED_VERIFIED' }));
+          setEmailSyncResult('SUCCESS: Verified employer confirmation receipt found in candidate IMAP inbox!');
+          setLogs(prev => [...prev, 'EMAIL_CONFIRMED: Real IMAP sync verified employer receipt email.']);
+        } else {
+          setEmailSyncResult('NOTICE: No matching employer confirmation email detected in candidate inbox yet.');
+          setLogs(prev => [...prev, 'EMAIL_SYNC_CHECKED: No employer receipt email found yet. Status remains unverified.']);
+        }
+      } else {
+        setEmailSyncResult('NOTICE: Email credentials not configured or IMAP connection pending.');
+      }
+    } catch (err) {
+      console.error('Real email sync error:', err);
+      setEmailSyncResult('NOTICE: IMAP server query pending.');
     } finally {
       setVerifyingEmail(false);
     }
   }
 
-  const isVerified = app?.status === 'SUBMITTED_VERIFIED' || app?.status === 'SUBMITTED';
+  // STRICT INVARIANT: ONLY SUBMITTED_VERIFIED gets the green verified badge!
+  const isVerified = app?.status === 'SUBMITTED_VERIFIED';
 
   return (
     <div className="space-y-6">
@@ -94,15 +115,19 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
           </div>
         </div>
 
-        {/* Prominent Status Badge */}
+        {/* STRICT Honest Status Badge */}
         <div className="text-right">
           {isVerified ? (
             <span className="px-4 py-1.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800 text-xs font-bold flex items-center gap-1.5">
-              <CheckCircle2 size={16} /> SUBMITTED_VERIFIED
+              <CheckCircle2 size={16} /> SUBMITTED_VERIFIED 🟢
+            </span>
+          ) : app?.status === 'SUBMITTED' ? (
+            <span className="px-4 py-1.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800 text-xs font-medium flex items-center gap-1.5">
+              <Clock size={16} /> SUBMITTED (Unverified - Awaiting Email Sync) 🟡
             </span>
           ) : (
             <span className="px-4 py-1.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 text-xs font-medium flex items-center gap-1.5">
-              <Clock size={16} className="text-amber-400" /> {app?.status || 'AWAITING_APPROVAL'}
+              <Clock size={16} className="text-neutral-400" /> {app?.status || 'AWAITING_APPROVAL'}
             </span>
           )}
         </div>
@@ -133,7 +158,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
           <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800 space-y-3">
             <div className="flex justify-between items-center text-xs font-bold text-white">
               <span>Level 2: Final Submission Confirm</span>
-              {level2Approved ? (
+              {level2Approved || app?.status === 'SUBMITTED' || isVerified ? (
                 <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 text-[9px] font-bold border border-emerald-800">
                   CONFIRMED
                 </span>
@@ -155,22 +180,35 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
                   : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30'
               }`}
             >
-              <ThumbsUp size={14} /> {level2Approved ? 'Submission Confirmed' : 'Confirm Final Submission'}
+              <ThumbsUp size={14} /> {level2Approved || isVerified ? 'Submission Confirmed' : 'Confirm Final Submission'}
             </button>
           </div>
 
         </div>
 
-        {/* Email Verification Action */}
-        <div className="pt-3 border-t border-neutral-800 flex justify-between items-center">
-          <span className="text-xs text-neutral-400">Employer Confirmation Receipt Sync</span>
-          <button
-            onClick={handleVerifyViaEmail}
-            disabled={verifyingEmail || app?.status === 'SUBMITTED_VERIFIED'}
-            className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-emerald-400 text-xs font-semibold rounded-lg transition border border-neutral-700 flex items-center gap-1.5"
-          >
-            <MailCheck size={14} /> {verifyingEmail ? 'Checking IMAP Inbox...' : 'Verify via Employer Email Sync'}
-          </button>
+        {/* Real Email Verification Action (No mock setTimeout) */}
+        <div className="pt-3 border-t border-neutral-800 space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-neutral-400 font-semibold">Authentic IMAP Employer Confirmation Sync</span>
+            <button
+              onClick={handleVerifyViaEmail}
+              disabled={verifyingEmail || isVerified}
+              className="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-emerald-400 text-xs font-semibold rounded-lg transition border border-neutral-700 flex items-center gap-1.5"
+            >
+              <MailCheck size={14} /> {verifyingEmail ? 'Querying Candidate IMAP Inbox...' : 'Verify via Employer Email Sync'}
+            </button>
+          </div>
+
+          {emailSyncResult && (
+            <div className={`p-3 rounded-lg text-xs font-medium border flex items-center gap-2 ${
+              emailSyncResult.startsWith('SUCCESS') 
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-800' 
+                : 'bg-neutral-950 text-neutral-300 border-neutral-800'
+            }`}>
+              <AlertCircle size={14} className={emailSyncResult.startsWith('SUCCESS') ? 'text-emerald-400' : 'text-amber-400'} />
+              <span>{emailSyncResult}</span>
+            </div>
+          )}
         </div>
       </div>
 

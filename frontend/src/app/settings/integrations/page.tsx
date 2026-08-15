@@ -1,61 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Sliders, 
-  CheckCircle2, 
-  AlertTriangle, 
-  Activity, 
-  ShieldCheck, 
-  Globe, 
-  Building2, 
   ToggleLeft, 
-  ToggleRight
+  ToggleRight,
+  ShieldCheck,
+  Activity
 } from 'lucide-react';
 
 export default function SourceIntegrationsPage() {
-  const [sources, setSources] = useState([
-    {
-      id: 'greenhouse',
-      name: 'Greenhouse ATS Board REST API',
-      category: 'Official ATS API',
-      badge: '🟢 Stable — Official API',
-      status: 'STABLE',
-      enabled: true,
-      lastFetch: '2 minutes ago (271 jobs parsed)',
-      reliability: '100% Reliable API'
-    },
-    {
-      id: 'naukri',
-      name: 'Naukri.com Search API',
-      category: 'Indian Job Portal',
-      badge: '🟢 Active Search',
-      status: 'STABLE',
-      enabled: true,
-      lastFetch: '5 minutes ago (20 jobs parsed)',
-      reliability: '95% Reliable API'
-    },
-    {
-      id: 'linkedin',
-      name: 'LinkedIn Candidate Browser Session',
-      category: 'Professional Network',
-      badge: '🟡 Best-Effort (Browser Context)',
-      status: 'BROWSER_CONTEXT',
-      enabled: true,
-      lastFetch: '10 minutes ago (10 jobs parsed)',
-      reliability: 'Candidate Session Required'
-    },
-    {
-      id: 'indeed',
-      name: 'Indeed Candidate Browser Session',
-      category: 'Global Job Board',
-      badge: '🟡 Best-Effort (Browser Context)',
-      status: 'BROWSER_CONTEXT',
-      enabled: true,
-      lastFetch: '12 minutes ago (16 jobs parsed)',
-      reliability: 'Candidate Session Required'
-    },
-  ]);
+  const [sources, setSources] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSourceHealth();
+  }, []);
+
+  async function fetchSourceHealth() {
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/jobs/source-health');
+      if (res.ok) {
+        const data = await res.json();
+        setSources(data.map((s: any) => ({ ...s, enabled: true })));
+      }
+    } catch (err) {
+      console.error('Failed to fetch source health:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function toggleSource(id: string) {
     setSources(prev => prev.map(s => s.id === id ? { ...s, enabled: !s.enabled } : s));
@@ -70,42 +44,45 @@ export default function SourceIntegrationsPage() {
           Job Source Health & Integrations <Sliders size={20} className="text-emerald-400" />
         </h1>
         <p className="text-xs text-neutral-400 mt-1">
-          Transparent source health monitor. Official APIs are marked Stable; candidate browser sources are marked Best-Effort.
+          Authentic live backend health telemetry. Official APIs are marked Stable; candidate browser sources are marked Best-Effort.
         </p>
       </div>
 
       {/* Sources List Grid */}
       <div className="space-y-4">
-        {sources.map((src) => (
-          <div key={src.id} className="bg-neutral-900/60 p-5 rounded-xl border border-neutral-800 flex justify-between items-center">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-3">
-                <h3 className="text-sm font-bold text-white">{src.name}</h3>
-                <span className="px-2.5 py-0.5 rounded-full bg-neutral-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold">
-                  {src.badge}
-                </span>
+        {loading ? (
+          <div className="py-8 text-center text-xs text-neutral-500">Querying backend source health telemetry...</div>
+        ) : (
+          sources.map((src) => (
+            <div key={src.id} className="bg-neutral-900/60 p-5 rounded-xl border border-neutral-800 flex justify-between items-center">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-bold text-white">{src.name}</h3>
+                  <span className="px-2.5 py-0.5 rounded-full bg-neutral-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold">
+                    {src.badge}
+                  </span>
+                </div>
+                
+                <div className="text-xs text-neutral-400 flex items-center gap-4">
+                  <span>Category: {src.category}</span>
+                  <span>Reliability: {src.reliability}</span>
+                </div>
               </div>
-              
-              <div className="text-xs text-neutral-400 flex items-center gap-4">
-                <span>Category: {src.category}</span>
-                <span>Last Fetch: {src.lastFetch}</span>
-                <span>Reliability: {src.reliability}</span>
-              </div>
-            </div>
 
-            {/* Toggle Button */}
-            <button
-              onClick={() => toggleSource(src.id)}
-              className="text-neutral-400 hover:text-white transition"
-            >
-              {src.enabled ? (
-                <ToggleRight size={32} className="text-emerald-500" />
-              ) : (
-                <ToggleLeft size={32} className="text-neutral-600" />
-              )}
-            </button>
-          </div>
-        ))}
+              {/* Toggle Button */}
+              <button
+                onClick={() => toggleSource(src.id)}
+                className="text-neutral-400 hover:text-white transition"
+              >
+                {src.enabled ? (
+                  <ToggleRight size={32} className="text-emerald-500" />
+                ) : (
+                  <ToggleLeft size={32} className="text-neutral-600" />
+                )}
+              </button>
+            </div>
+          ))
+        )}
       </div>
 
     </div>
