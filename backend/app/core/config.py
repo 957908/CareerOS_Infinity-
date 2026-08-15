@@ -34,6 +34,13 @@ class Settings(BaseSettings):
         default="redis://redis:6379/0"
     )
 
+    # AI Configurations
+    GEMINI_API_KEY: str = Field(default="")
+
+    # Email Sync Configurations (Optional Real Inbox Connection)
+    IMAP_USER_EMAIL: str = Field(default="")
+    GMAIL_APP_PASSWORD: str = Field(default="")
+
     # Security Keys
     SECRET_KEY: str = Field(
         default="super_secret_jwt_sign_key_rotating_32_bytes_len"
@@ -43,4 +50,11 @@ class Settings(BaseSettings):
 
 # Instantiate single settings instance
 settings = Settings()
+
+import os
+if settings.GEMINI_API_KEY:
+    os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
+    os.environ["GEMINI_API_KEY"] = settings.GEMINI_API_KEY
+
 logger.info("Application settings loaded successfully.")
+

@@ -69,10 +69,7 @@ class EmailSyncService:
         if not sync_results:
             logger.info("EmailSync: Simulating inbound employer application receipts...")
             # Query recent applications from graph
-            applications = await graph_repo.get_relationships_by_type(
-                source_id=f"user:{user_id}",
-                relation_type="APPLIED_TO"
-            )
+            applications = await graph_repo.get_entities_by_type("APPLICATION")
             
             # Form simulated confirmations for any pending/submitted applications
             simulated_records = [

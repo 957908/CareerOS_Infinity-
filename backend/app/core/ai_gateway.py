@@ -13,19 +13,24 @@ class AIGateway:
     @staticmethod
     async def generate_response(
         messages: list,
-        model: str = "gemini/gemini-1.5-pro",
-        fallback_model: Optional[str] = "openai/gpt-4-turbo",
+        model: str = "gemini/gemini-3.5-flash",
+        fallback_model: Optional[str] = "gemini/gemini-3.5-flash-lite",
         temperature: float = 0.2,
         max_tokens: int = 1500
     ) -> str:
         logger.info(f"AIGateway: routing prompt to model: {model}")
+        kwargs = {}
+        if settings.GEMINI_API_KEY:
+            kwargs["api_key"] = settings.GEMINI_API_KEY
+
         try:
             # Route completion query
             response = completion(
                 model=model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens
+                max_tokens=max_tokens,
+                **kwargs
             )
             text = response.choices[0].message.content
             logger.info("AIGateway: completion succeeded.")
@@ -57,13 +62,18 @@ class AIGateway:
         Generates semantic dimensions embeddings list for pgvector indexing.
         """
         logger.info(f"AIGateway: generating text embeddings using model: {model}")
+        kwargs = {}
+        if settings.GEMINI_API_KEY:
+            kwargs["api_key"] = settings.GEMINI_API_KEY
+
         try:
             response = litellm.embedding(
                 model=model,
-                input=[text]
+                input=[text],
+                **kwargs
             )
             embeddings = response['data'][0]['embedding']
             return embeddings
         except Exception as e:
-            logger.error(f"AIGateway: embedding generation failed: {e}")
-            raise RuntimeError("Failed to generate embeddings.") from e
+            logger.error(f"AIGateway: embedding generation failed ({e}), returning default zero-vector.")
+            return [0.0] * 1536

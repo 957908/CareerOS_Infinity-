@@ -1,7 +1,7 @@
 import uuid
 import datetime
 from typing import Optional
-from sqlalchemy import String, ForeignKey, DateTime, Integer
+from sqlalchemy import String, ForeignKey, DateTime, Integer, Boolean
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
@@ -49,6 +49,73 @@ class Resume(Base):
         ForeignKey("resumes.id", ondelete="SET NULL"),
         nullable=True,
         index=True
+    )
+    is_master: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False
+    )
+    resume_type: Mapped[str] = mapped_column(
+        String(100),
+        default="TAILORED",
+        nullable=False
+    )
+    lifecycle_status: Mapped[str] = mapped_column(
+        String(50),
+        default="ACTIVE",
+        nullable=False
+    )
+    checksum: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True
+    )
+    validation_status: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        default="PENDING",
+        nullable=True
+    )
+    target_job_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        ForeignKey("job_postings.id", ondelete="SET NULL"),
+        nullable=True
+    )
+    target_company: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )
+    target_role: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True
+    )
+    ats_score_before: Mapped[Optional[float]] = mapped_column(
+        nullable=True
+    )
+    ats_score_after: Mapped[Optional[float]] = mapped_column(
+        nullable=True
+    )
+    matched_skills: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True
+    )
+    missing_skills: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True
+    )
+    changed_sections: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True
+    )
+    truth_guard_result: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True
+    )
+    evaluation_metadata: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True
+    )
+    approval_status: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        default="PENDING",
+        nullable=True
     )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True),

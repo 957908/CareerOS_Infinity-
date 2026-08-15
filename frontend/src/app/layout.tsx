@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import '../styles/global.css';
+import './globals.css';
 import CommandPalette from '../components/CommandPalette';
 
 export const metadata: Metadata = {

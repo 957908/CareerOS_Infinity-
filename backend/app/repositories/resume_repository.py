@@ -26,7 +26,10 @@ class ResumeRepository(BaseRepository[Resume]):
         file_url: str,
         raw_text: str,
         resume_json: dict,
-        embedding: list
+        embedding: list,
+        is_master: bool = False,
+        resume_type: str = "TAILORED",
+        parent_id: str = None
     ) -> Resume:
         logger.info(f"ResumeRepository: saving new parsed resume instance for user ID: {user_id}")
         resume = Resume(
@@ -34,7 +37,10 @@ class ResumeRepository(BaseRepository[Resume]):
             file_url=file_url,
             raw_text=raw_text,
             resume_json=resume_json,
-            embedding=embedding
+            embedding=embedding,
+            is_master=is_master,
+            resume_type=resume_type,
+            parent_id=parent_id
         )
         self.session.add(resume)
         await self.session.flush()

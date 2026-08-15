@@ -12,6 +12,10 @@ module.exports = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         border: "var(--border)",
+        neutral: {
+          805: "#222222",
+          850: "#1a1a1a",
+        },
         primary: {
           DEFAULT: "var(--primary)",
           hover: "var(--primary-hover)",

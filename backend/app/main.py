@@ -1,5 +1,11 @@
 import time
 import logging
+import sys
+import asyncio
+
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -11,12 +17,34 @@ from app.api.auth import router as auth_router
 from app.api.resumes import router as resumes_router
 from app.api.jobs import router as jobs_router
 from app.api.applications import router as applications_router
+from app.api.career import router as career_router
+from app.api.communications import router as communications_router
+from app.api.jobpilot import router as jobpilot_router
+from app.api.tracking import router as tracking_router
+from app.api.interviews import router as interviews_router
+from app.api.career_analytics import router as career_analytics_router
 
 from contextlib import asynccontextmanager
 from app.core.database import Base, engine
 from app.models.user import User
 from app.models.resume import Resume
 from app.models.graph import GraphNode, GraphRelationship
+# Part 2: Job Intelligence models
+from app.models.job import JobPosting
+from app.models.job_intelligence import JobSkillRequirement, JobMatch, JobInteraction, JobIngestionLog
+from app.models.master_profile import MasterProfile, UserSkill, Experience, Project, Certification, Evidence, CareerGoal
+# Part 3: Resume Tailoring models
+from app.models.tailoring import ResumeTailoringJob, ResumeChange
+# Part 4: Communication models
+from app.models.communication import ApplicationCommunication, CommunicationVersion, CommunicationAudit
+# Part 5: Application Tracking & Automation models
+from app.models.application import Application, ApplicationStatusHistory, AutomationRun, ApplicationField, ApprovalRequest
+# Part 6: Autonomous Discovery & Intelligence models
+from app.models.job_discovery import JobDiscoveryRun, SkillGapAggregate, JobPipelineControl
+# Part 7: Real-World Operations & Interview Intelligence models
+from app.models.application_tracking import ApplicationTrackingEvent, ApplicationResponse, FollowUp
+from app.models.interview import Interview, InterviewQuestion, InterviewFeedback
+from app.models.job_search_goal import JobSearchGoal
 
 # Setup structured logging immediately
 setup_structured_logging()
@@ -76,6 +104,12 @@ app.include_router(metrics_router, prefix=settings.API_V1_STR)
 app.include_router(resumes_router, prefix=settings.API_V1_STR)
 app.include_router(jobs_router, prefix=settings.API_V1_STR)
 app.include_router(applications_router, prefix=settings.API_V1_STR)
+app.include_router(career_router, prefix=settings.API_V1_STR)
+app.include_router(communications_router, prefix=settings.API_V1_STR)
+app.include_router(jobpilot_router, prefix=settings.API_V1_STR)
+app.include_router(tracking_router, prefix=settings.API_V1_STR)
+app.include_router(interviews_router, prefix=settings.API_V1_STR)
+app.include_router(career_analytics_router, prefix=settings.API_V1_STR)
 
 @app.websocket("/ws/interviews/{session_id}")
 async def mock_interview_websocket(websocket: WebSocket, session_id: str):

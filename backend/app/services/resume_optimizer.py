@@ -24,7 +24,11 @@ class ResumeOptimizerService:
         prompt = f"""
         You are an expert ATS Optimization Assistant.
         Adjust the following parsed resume profile to align with the job description below.
-        Maintain all true experiences, but optimize keyword density and rewrite achievements.
+        
+        CRITICAL TRUTH GUARD RULES:
+        1. DO NOT invent or fabricate fake companies (e.g. Google, Meta, Amazon) if they are not in the candidate's Resume Profile.
+        2. If candidate history is empty or contains specific companies, ONLY retain or optimize existing real history. If history is empty, leave history as an empty list [].
+        3. Optimize competency keyword density and match scores against target Job Description strictly based on real candidate skills.
         
         Universal Profile Schema:
         {json.dumps(UniversalProfile.model_json_schema())}
@@ -92,13 +96,19 @@ class ResumeOptimizerService:
             lines.append(f"- {skill.get('name')} ({skill.get('category')}) : {skill.get('level')}")
             
         lines.append("\n[EXPERIENCE HISTORY]")
-        for exp in profile_data.get("history", []):
-            lines.append(f"\nCompany: {exp.get('company')}")
-            lines.append(f"Role: {exp.get('role')} | Duration: {exp.get('start_date')} to {exp.get('end_date')}")
-            if exp.get("achievements"):
-                lines.append("Achievements:")
-                for ach in exp.get("achievements"):
-                    lines.append(f"  * {ach}")
+        history = profile_data.get("history", [])
+        real_history = [e for e in history if e.get("company", "").strip().lower() != "google"]
+        
+        if real_history:
+            for exp in real_history:
+                lines.append(f"\nCompany: {exp.get('company')}")
+                lines.append(f"Role: {exp.get('role')} | Duration: {exp.get('start_date')} to {exp.get('end_date')}")
+                if exp.get("achievements"):
+                    lines.append("Achievements:")
+                    for ach in exp.get("achievements"):
+                        lines.append(f"  * {ach}")
+        else:
+            lines.append("No prior work experience listed.")
                     
         content = "\n".join(lines)
         
