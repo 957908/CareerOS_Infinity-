@@ -104,13 +104,13 @@ async def get_source_health():
         },
         {
             "id": "naukri",
-            "name": "Naukri.com Search Integration",
+            "name": "Naukri.com Candidate Browser Session",
             "category": "Indian Job Portal",
-            "badge": "🟢 Active Search Integration",
-            "status": "STABLE",
-            "is_official_api": True,
-            "requires_browser": False,
-            "reliability": "Authentic Search Direct"
+            "badge": "🟢 Browser Active" if "session_naukri" in active_instances else "🟡 Candidate Session Required",
+            "status": "ACTIVE" if "session_naukri" in active_instances else "BROWSER_REQUIRED",
+            "is_official_api": False,
+            "requires_browser": True,
+            "reliability": "Headful Playwright Session"
         },
         {
             "id": "linkedin",
@@ -140,6 +140,7 @@ async def discover_jobs_endpoint(query: str = Query("Data Engineer")):
     """
     Discovers authentic live job postings using authentic scrapers and ATS APIs.
     """
+    from app.services.job_sources.naukri import NaukriJobSource
     from app.services.job_sources.linkedin import LinkedInJobSource
     from app.services.job_sources.indeed import IndeedJobSource
     from app.services.job_sources.company import CompanyJobSource
@@ -151,7 +152,11 @@ async def discover_jobs_endpoint(query: str = Query("Data Engineer")):
     cmp_jobs = await cmp_source.discover(query)
     results.extend([j.__dict__ for j in cmp_jobs])
     
-    # Query LinkedIn & Indeed
+    # Query Naukri, LinkedIn & Indeed
+    nk_source = NaukriJobSource()
+    nk_jobs = await nk_source.discover(query)
+    results.extend([j.__dict__ for j in nk_jobs])
+
     li_source = LinkedInJobSource()
     li_jobs = await li_source.discover(query)
     results.extend([j.__dict__ for j in li_jobs])
