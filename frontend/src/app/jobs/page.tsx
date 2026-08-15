@@ -125,11 +125,33 @@ export default function JobsFeedPage() {
                   <p className="text-xs text-neutral-400 line-clamp-2 leading-relaxed">
                     {job.description}
                   </p>
+
+                  {/* Skills & AI Tailoring Breakdown */}
+                  {job.matched_skills && job.matched_skills.length > 0 && (
+                    <div className="pt-2 flex flex-wrap gap-1 items-center">
+                      <span className="text-[10px] text-neutral-500 font-semibold mr-1">Matched:</span>
+                      {job.matched_skills.slice(0, 3).map((sk: string, i: number) => (
+                        <span key={i} className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 text-[9px] border border-emerald-900 font-mono">
+                          {sk}
+                        </span>
+                      ))}
+                      {job.missing_skills && job.missing_skills.length > 0 && (
+                        <>
+                          <span className="text-[10px] text-neutral-500 font-semibold mx-1">Missing:</span>
+                          {job.missing_skills.slice(0, 2).map((sk: string, i: number) => (
+                            <span key={i} className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-400 text-[9px] border border-amber-900 font-mono">
+                              {sk}
+                            </span>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center border-t border-neutral-800/60 pt-3">
                   <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-                    <Target size={14} /> ATS Match: {job.match_score || 88}%
+                    <Target size={14} /> ATS Match: {job.match_score ? `${job.match_score}%` : 'Calculate...'}
                   </div>
 
                   {/* Honest UX Rule: No Quick Apply button! Only View & Prepare Application */}
