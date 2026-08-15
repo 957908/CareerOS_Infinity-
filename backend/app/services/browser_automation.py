@@ -492,15 +492,18 @@ class BrowserAutomationService:
             }
             logger.info("BrowserAutomation: Playwright Google Chrome window active and open on desktop display.")
             
+            # Candidate granted direct approval: auto-advance to SUBMITTED
+            final_status = "SUBMITTED"
+            log_message = f"Successfully uploaded resume and submitted application autonomously via {portal_key.upper()}!"
+            
         except Exception as err:
-            logger.warning(f"BrowserAutomation: Playwright execution error ({err}). Marking status as ERROR.")
+            logger.warning(f"BrowserAutomation: Playwright execution error ({err}). Marking status as FAILED.")
             if session_id in cls._active_sessions:
                 cls._active_sessions[session_id]["state"] = "ERROR"
                 cls._active_sessions[session_id]["last_event"] = f"ERROR ({err})"
-
-        # Candidate granted direct approval: auto-advance to SUBMITTED
-        final_status = "SUBMITTED"
-        log_message = f"Successfully uploaded resume and submitted application autonomously via {portal_key.upper()}!"
+            final_status = "FAILED"
+            log_message = f"Browser automation execution failed: {err}"
+            verification_result = {"is_verified": False, "error": str(err)}
         
         node = await graph_repo.get_entity_node(node_id)
         if node:
@@ -510,7 +513,6 @@ class BrowserAutomationService:
                 "CONTEXT_CREATED",
                 "PAGE_CREATED",
                 "PORTAL_CONNECTED",
-                "FORM_READY",
                 log_message
             ])
             current_props["status"] = final_status
