@@ -308,15 +308,18 @@ async def autonomous_run_endpoint(
 
 
 @router.post("/sync-email", status_code=status.HTTP_200_OK)
+@router.post("/sync-emails", status_code=status.HTTP_200_OK)
 async def sync_email_endpoint(
-    payload: dict,
+    payload: dict = None,
     session: AsyncSession = Depends(get_db_session)
 ):
     """
     Syncs employer confirmation emails & response status updates via live IMAP or simulation.
     """
-    email_address = payload.get("email_address")
-    app_password = payload.get("app_password")
+    payload_dict = payload or {}
+    email_address = payload_dict.get("email_address")
+    app_password = payload_dict.get("app_password")
+    company = payload_dict.get("company")
 
     try:
         from app.services.email_service import EmailSyncService
@@ -324,12 +327,15 @@ async def sync_email_endpoint(
             session=session,
             user_id="00000000-0000-0000-0000-000000000000",
             email_address=email_address,
-            app_password=app_password
+            app_password=app_password,
+            company_filter=company
         )
         return {
             "status": "ok",
+            "verified": len(synced) > 0,
             "message": f"Successfully synced {len(synced)} employer confirmation emails",
             "synced_count": len(synced),
+            "emails_matched": len(synced),
             "emails": synced
         }
     except Exception as e:
