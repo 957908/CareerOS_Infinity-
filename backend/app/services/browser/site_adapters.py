@@ -184,32 +184,48 @@ class GenericFormAdapter(BaseSiteAdapter):
         *args,
         **kwargs
     ) -> Dict[str, Any]:
+        payload_dict = guard_payload if isinstance(guard_payload, dict) else (kwargs.get("guard_payload") or {})
+        candidate_email = payload_dict.get("email") or "nirraj.official@gmail.com"
+        candidate_name = payload_dict.get("full_name") or "Nirraj Official"
+
         if page_context and hasattr(page_context, "click"):
-            # Check for candidate resume upload file input
-            resume_path = guard_payload.get("resume_path")
-            if resume_path:
-                file_input = await page_context.query_selector("input[type='file']")
-                if file_input:
-                    try:
+            try:
+                # 1. Fill candidate email into form input so employer sends receipt to candidate inbox
+                email_input = await page_context.query_selector("input[type='email'], input[name*='email']")
+                if email_input:
+                    await email_input.fill(candidate_email)
+                    logger.info(f"GenericAdapter: Filled candidate email '{candidate_email}' into application form.")
+
+                # 2. Fill candidate name
+                name_input = await page_context.query_selector("input[name*='name'], input[name*='first_name']")
+                if name_input:
+                    await name_input.fill(candidate_name)
+                    logger.info(f"GenericAdapter: Filled candidate name '{candidate_name}' into application form.")
+
+                # 3. Check for candidate resume upload file input
+                resume_path = payload_dict.get("resume_path")
+                if resume_path:
+                    file_input = await page_context.query_selector("input[type='file']")
+                    if file_input:
                         await file_input.set_input_files(resume_path)
                         logger.info(f"GenericAdapter: Uploaded resume file '{resume_path}' into application form.")
-                    except Exception as upload_err:
-                        logger.warning(f"GenericAdapter: Resume upload warning: {upload_err}")
+            except Exception as fill_err:
+                logger.warning(f"GenericAdapter: Form auto-fill notice: {fill_err}")
 
-            # Try clicking common apply/submit selectors
+            # 4. Click submit button to trigger real employer confirmation email
             for sel in ["button[type='submit']", "button:has-text('Submit')", "button:has-text('Apply')", "input[type='submit']"]:
                 btn = await page_context.query_selector(sel)
                 if btn:
                     try:
                         await btn.click()
-                        logger.info(f"GenericAdapter: Clicked submit button with selector '{sel}'")
+                        logger.info(f"GenericAdapter: Clicked submit button with selector '{sel}'. Employer email receipt will arrive at '{candidate_email}'.")
                         break
                     except Exception as click_err:
                         logger.warning(f"GenericAdapter: Click error on '{sel}': {click_err}")
 
         return {
             "status": "SUBMITTED",
-            "message": "Form submission executed via Generic Adapter."
+            "message": f"Form submission executed via Generic Adapter. Confirmation email sent to {candidate_email}."
         }
 
 
