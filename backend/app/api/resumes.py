@@ -25,7 +25,7 @@ async def process_master_resume_upload(
     session: AsyncSession
 ) -> dict:
     file_bytes = await file.read()
-    raw_text = DocumentParserService.extract_text_from_pdf(file_bytes)
+    raw_text = DocumentParserService.extract_text_from_file(file_bytes, file.filename)
     clean_text = DocumentParserService.clean_text_payload(raw_text)
 
     schema_json = json.dumps(UniversalProfile.model_json_schema())

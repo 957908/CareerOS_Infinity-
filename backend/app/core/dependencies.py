@@ -21,13 +21,29 @@ async def get_current_user(
     """
     Dependency resolving the active user object.
     Bypasses JWT auth in local development and returns a default mock user.
+    Handles DB connection pool drops gracefully.
     """
     import uuid
     mock_id = "00000000-0000-0000-0000-000000000000"
     logger.info(f"UAT Mode: resolving default mock user ID: {mock_id}")
-    user = await user_repo.get_by_id(mock_id)
-    if not user:
-        user = User(
+    
+    try:
+        user = await user_repo.get_by_id(mock_id)
+        if not user:
+            user = User(
+                id=uuid.UUID(mock_id),
+                email="mockuser@careeros.local",
+                full_name="Mock Developer",
+                hashed_password="mock_password",
+                role=UserRole.MEMBER,
+                is_active=True
+            )
+            user_repo.session.add(user)
+            await user_repo.session.flush()
+        return user
+    except Exception as db_err:
+        logger.warning(f"get_current_user: DB connection query failed ({db_err}), returning active UAT User context.")
+        return User(
             id=uuid.UUID(mock_id),
             email="mockuser@careeros.local",
             full_name="Mock Developer",
@@ -35,9 +51,6 @@ async def get_current_user(
             role=UserRole.MEMBER,
             is_active=True
         )
-        user_repo.session.add(user)
-        await user_repo.session.flush()
-    return user
 
 class RoleChecker:
     """
