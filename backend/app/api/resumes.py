@@ -159,10 +159,10 @@ async def upload_resume(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session)
 ) -> dict:
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith((".pdf", ".docx", ".doc", ".txt")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only PDF file format is supported."
+            detail="Supported file formats: PDF, DOCX, DOC, TXT."
         )
     return await process_master_resume_upload(file, current_user, session)
 
@@ -172,10 +172,10 @@ async def upload_master(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db_session)
 ) -> dict:
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith((".pdf", ".docx", ".doc", ".txt")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only PDF file format is supported."
+            detail="Supported file formats: PDF, DOCX, DOC, TXT."
         )
     return await process_master_resume_upload(file, current_user, session)
 
