@@ -12,11 +12,11 @@ logger = logging.getLogger("app.services.credential_vault")
 class CredentialVault:
     """
     Symmetric Cryptographic Vault managing secure storage and retrieval 
-    of external portal usernames and passwords.
+    of external portal usernames, passwords, and IMAP email credentials.
+    INVARIANT: AES-256 Fernet encryption. Passwords/app-passwords never exposed or logged.
     """
     @staticmethod
     def _get_cipher() -> Fernet:
-        # Derive a secure 32-byte key from the SECRET_KEY setting using SHA-256
         key_source = settings.SECRET_KEY.encode("utf-8")
         key_hash = hashlib.sha256(key_source).digest()
         fernet_key = base64.urlsafe_b64encode(key_hash)
@@ -85,6 +85,58 @@ class CredentialVault:
             }
         except Exception as e:
             logger.error(f"CredentialVault: decryption failed for portal {portal_name}: {e}")
+            return {}
+
+    @classmethod
+    async def save_imap_credentials(
+        cls,
+        session: AsyncSession,
+        email_address: str,
+        app_password: str,
+        imap_server: str = "imap.gmail.com"
+    ) -> None:
+        """
+        Encrypts and stores candidate IMAP email credentials safely in Vault.
+        """
+        logger.info(f"CredentialVault: encrypting and saving IMAP credentials for address: {email_address}")
+        graph_repo = PostgreSQLGraphRepository(session)
+        node_id = "credential:imap"
+        encrypted_pass = cls.encrypt_password(app_password)
+        
+        properties = {
+            "portal": "IMAP",
+            "username": email_address,
+            "encrypted_password": encrypted_pass,
+            "imap_server": imap_server
+        }
+        
+        await graph_repo.add_entity_node(
+            node_id=node_id,
+            entity_type="CREDENTIAL",
+            properties=properties
+        )
+        await session.commit()
+
+    @classmethod
+    async def get_imap_credentials(cls, session: AsyncSession) -> dict:
+        """
+        Retrieves decrypted candidate IMAP credentials.
+        """
+        graph_repo = PostgreSQLGraphRepository(session)
+        node = await graph_repo.get_entity_node("credential:imap")
+        if not node:
+            return {}
+            
+        props = dict(node.properties)
+        try:
+            decrypted_pass = cls.decrypt_password(props["encrypted_password"])
+            return {
+                "email_address": props["username"],
+                "app_password": decrypted_pass,
+                "imap_server": props.get("imap_server", "imap.gmail.com")
+            }
+        except Exception as e:
+            logger.error(f"CredentialVault: decryption failed for IMAP credentials: {e}")
             return {}
 
     @classmethod

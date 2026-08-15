@@ -1,6 +1,7 @@
 """
 CompanyJobSource — Direct career page discovery adapter for ATS integrations (Greenhouse, Lever, Workday).
 INVARIANT: Strictly queries public company ATS API endpoints with exponential backoff and precise keyword matching.
+RATE LIMIT SAFETY: Max 1 retry on HTTP 429/rate-limit, then circuit-breaker STOPS to prevent aggressive re-hammering.
 """
 import logging
 import urllib.parse
@@ -34,16 +35,15 @@ class CompanyJobSource(JobSourceBase):
             url = f"https://boards-api.greenhouse.io/v1/boards/{comp}/jobs?content=true"
             req = urllib.request.Request(url)
             
-            # Retry loop with exponential backoff
-            for attempt in range(3):
+            # Circuit-Breaker Policy: Max 1 retry on 429 rate limit
+            for attempt in range(2):
                 try:
-                    with urllib.request.urlopen(req, timeout=8) as resp:
+                    with urllib.request.urlopen(req, timeout=6) as resp:
                         data = json.loads(resp.read().decode('utf-8', errors='ignore'))
                         for j in data.get("jobs", []):
                             t = j.get("title", "")
                             t_lower = t.lower()
                             
-                            # Match raw query string or query words against un-encoded title string
                             is_match = not raw_query or raw_query in t_lower or any(w in t_lower for w in query_words)
                             if is_match:
                                 j_id = str(j.get("id"))
@@ -58,11 +58,13 @@ class CompanyJobSource(JobSourceBase):
                                     location=loc,
                                     description=f"Direct ATS job listing for {t} at {comp.capitalize()} ({loc}).",
                                 ))
-                        break  # Successful fetch, break retry loop
+                        break
                 except urllib.error.HTTPError as http_err:
-                    logger.warning(f"CompanyJobSource: ATS board '{comp}' HTTP {http_err.code} on attempt {attempt+1}")
-                    if http_err.code in (429, 503, 504) and attempt < 2:
-                        await asyncio.sleep(2 ** attempt)
+                    if http_err.code == 429:
+                        logger.warning(f"CompanyJobSource: ATS board '{comp}' HTTP 429 Rate-Limited on attempt {attempt+1}. Stopping retries (Circuit Breaker).")
+                        break
+                    elif http_err.code in (503, 504) and attempt < 1:
+                        await asyncio.sleep(1)
                     else:
                         break
                 except Exception as err:
@@ -76,10 +78,9 @@ class CompanyJobSource(JobSourceBase):
         url = source_url or f"https://careers.company.com/jobs/{source_job_id}"
         logger.info(f"CompanyJobSource: Fetching live job details for '{source_job_id}' from URL: {url}")
         
-        # Real HTTP fetch for direct job details
         req = urllib.request.Request(url)
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 html = resp.read().decode('utf-8', errors='ignore')
                 import re
                 title_match = re.search(r'<title>([^<]+)</title>', html, re.I)

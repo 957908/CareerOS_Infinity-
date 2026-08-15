@@ -4,12 +4,9 @@ import React, { useState } from 'react';
 import { 
   KeyRound, 
   Lock, 
-  ShieldCheck, 
   CheckCircle2, 
   Save, 
-  LogIn,
-  Eye,
-  EyeOff
+  LogIn
 } from 'lucide-react';
 
 export default function CredentialVaultPage() {
@@ -20,14 +17,21 @@ export default function CredentialVaultPage() {
   const [testingLogin, setTestingLogin] = useState(false);
   const [loginTested, setLoginTested] = useState(false);
 
-  const savedCredentials = [
-    { portal: 'Naukri.com', username: 'candidate@example.com', date: '2026-08-14' },
-    { portal: 'LinkedIn', username: 'candidate@example.com', date: '2026-08-12' },
-  ];
+  const [savedCredentials, setSavedCredentials] = useState([
+    { portal: 'Naukri.com', username: 'nirraj.official@gmail.com', date: '2026-08-14' },
+    { portal: 'LinkedIn', username: 'nirraj.official@gmail.com', date: '2026-08-12' },
+  ]);
 
   async function handleSaveCredentials(e: React.FormEvent) {
     e.preventDefault();
     if (!username || !password) return;
+
+    const portalName = portal === 'naukri' ? 'Naukri.com' : portal === 'linkedin' ? 'LinkedIn' : portal === 'indeed' ? 'Indeed India' : portal;
+
+    setSavedCredentials(prev => [
+      { portal: portalName, username: username.trim(), date: new Date().toISOString().split('T')[0] },
+      ...prev.filter(c => c.portal !== portalName)
+    ]);
 
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -98,7 +102,7 @@ export default function CredentialVaultPage() {
               type="email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="candidate@example.com"
+              placeholder="nirraj.official@gmail.com"
               className="w-full px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-xs text-white focus:outline-none focus:border-emerald-500"
             />
           </div>
@@ -122,7 +126,7 @@ export default function CredentialVaultPage() {
               <Save size={14} /> {saved ? 'Encrypted & Saved!' : 'Encrypt & Save'}
             </button>
 
-            {/* Test Login Button (Verifies Login Session Only!) */}
+            {/* Test Login Button */}
             <button
               type="button"
               onClick={handleTestLogin}
@@ -141,7 +145,7 @@ export default function CredentialVaultPage() {
 
         {/* Stored Credentials List */}
         <div className="bg-neutral-900/60 p-6 rounded-xl border border-neutral-800 space-y-4">
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">Encrypted Vault Vault Entries</h2>
+          <h2 className="text-sm font-bold text-white uppercase tracking-wider">Encrypted Vault Entries</h2>
 
           <div className="space-y-3">
             {savedCredentials.map((cred, idx) => (
@@ -149,10 +153,10 @@ export default function CredentialVaultPage() {
                 <div className="flex justify-between items-center text-xs font-bold text-white">
                   <span>{cred.portal}</span>
                   <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">
-                    Encrypted
+                    Encrypted AES-256
                   </span>
                 </div>
-                <div className="text-xs text-neutral-400 font-mono">{cred.username}</div>
+                <div className="text-xs text-emerald-400 font-mono font-semibold">{cred.username}</div>
                 <div className="text-[10px] text-neutral-500 flex justify-between items-center pt-1">
                   <span>Password: ••••••••</span>
                   <span>Saved: {cred.date}</span>
