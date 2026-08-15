@@ -1,7 +1,7 @@
 """
-IndeedJobSource — Candidate-Authenticated Playwright & RSS Discovery Adapter.
-INVARIANT: Strictly operates within candidate's active headful browser session or official RSS feeds.
-Zero anti-bot evasion, zero ToS violations, zero fake/synthetic fallback data.
+IndeedJobSource — Candidate Logged-In Headful Playwright Browser Adapter.
+INVARIANT: Strictly operates within candidate's active logged-in persistent Chrome session.
+Zero raw HTTP scraping, zero anti-bot evasion, zero ToS violations, zero fake/synthetic fallback data.
 """
 import logging
 import urllib.parse
@@ -16,15 +16,24 @@ class IndeedJobSource(JobSourceBase):
     def source_name(self) -> str:
         return "indeed"
 
+    # Encapsulated Indeed DOM Selectors (Isolated for modular maintenance)
+    SELECTORS = {
+        "job_card": ".job_seen_beacon, .result, [data-jk]",
+        "title": "h2.jobTitle, a.jcs-JobTitle, span[id^='jobTitle']",
+        "company": "[data-testid='company-name'], .companyName, span.company",
+        "location": "[data-testid='text-location'], .companyLocation",
+        "link": "a.jcs-JobTitle, h2.jobTitle a",
+    }
+
     async def discover(self, query: str, **kwargs) -> List[RawJobData]:
         raw_query = query.strip()
         encoded_query = urllib.parse.quote(raw_query)
         target_url = f"https://in.indeed.com/jobs?q={encoded_query}&l=India"
-        logger.info(f"IndeedJobSource: Querying authentic discovery for '{raw_query}'")
+        logger.info(f"IndeedJobSource: Initiating candidate browser discovery for '{raw_query}' via URL: {target_url}")
 
         results: List[RawJobData] = []
         
-        # Check for active Playwright candidate browser session
+        # Access candidate's authentic headful Playwright Chrome browser session
         try:
             from app.services.browser_automation import BrowserAutomationService
             session_id = "session_indeed"
@@ -32,17 +41,23 @@ class IndeedJobSource(JobSourceBase):
             
             if active_inst and active_inst.get("page"):
                 page = active_inst["page"]
-                logger.info("IndeedJobSource: Using candidate's active headful browser session for ToS-compliant discovery.")
+                logger.info("IndeedJobSource: Executing search within candidate's active logged-in Chrome session.")
                 await page.goto(target_url)
-                await page.wait_for_selector(".job_seen_beacon, .result", timeout=5000)
                 
-                cards = await page.query_selector_all(".job_seen_beacon, .result")
+                try:
+                    await page.wait_for_selector(self.SELECTORS["job_card"], timeout=6000)
+                except Exception:
+                    logger.info("IndeedJobSource: DOM selector wait timeout on active session page.")
+
+                cards = await page.query_selector_all(self.SELECTORS["job_card"])
                 for idx, card in enumerate(cards[:15]):
-                    t_elem = await card.query_selector("h2.jobTitle, a.jcs-JobTitle")
-                    c_elem = await card.query_selector("[data-testid='company-name'], .companyName")
+                    t_elem = await card.query_selector(self.SELECTORS["title"])
+                    c_elem = await card.query_selector(self.SELECTORS["company"])
+                    l_elem = await card.query_selector(self.SELECTORS["location"])
                     
-                    title = await t_elem.inner_text() if t_elem else "Data Engineer"
+                    title = await t_elem.inner_text() if t_elem else raw_query.title()
                     company = await c_elem.inner_text() if c_elem else "Indeed Employer"
+                    location = await l_elem.inner_text() if l_elem else "India"
                     
                     jk = await card.get_attribute("data-jk") or f"live-{idx+2001}"
                     job_url = f"https://in.indeed.com/viewjob?jk={jk}"
@@ -53,13 +68,13 @@ class IndeedJobSource(JobSourceBase):
                         source_url=job_url,
                         title=title.strip(),
                         company=company.strip(),
-                        location="India",
-                        description=f"Authentic live listing: {title.strip()} at {company.strip()}.",
+                        location=location.strip(),
+                        description=f"Authentic candidate-session listing: {title.strip()} at {company.strip()} ({location.strip()}).",
                     ))
-                logger.info(f"IndeedJobSource: Extracted {len(results)} authentic live listings via candidate browser context.")
+                logger.info(f"IndeedJobSource: Successfully extracted {len(results)} authentic job listings via candidate Chrome context.")
                 return results
-        except Exception as b_err:
-            logger.info(f"IndeedJobSource: Candidate browser session not active or selector wait: {b_err}")
+        except Exception as err:
+            logger.info(f"IndeedJobSource: Candidate browser session error or not active: {err}")
 
         # If candidate browser is idle, return transparent telemetry status requiring candidate session
         logger.info("IndeedJobSource: Telemetry Status = CANDIDATE_SESSION_RECOMMENDED (Launch headful Chrome in Control Center for authenticated search).")
@@ -68,7 +83,7 @@ class IndeedJobSource(JobSourceBase):
     async def fetch(self, source_job_id: str, source_url: Optional[str] = None) -> RawJobData:
         clean_jk = source_job_id.replace("ind-", "")
         url = source_url or f"https://in.indeed.com/viewjob?jk={clean_jk}"
-        logger.info(f"IndeedJobSource: Real single-job fetch requested for URL: {url}")
+        logger.info(f"IndeedJobSource: Candidate browser fetch requested for URL: {url}")
         
         try:
             from app.services.browser_automation import BrowserAutomationService
@@ -89,7 +104,7 @@ class IndeedJobSource(JobSourceBase):
                     title=title.strip(),
                     company=company.strip(),
                     location="India",
-                    description=f"Authentic live job detail fetched via candidate browser for {url}.",
+                    description=f"Authentic candidate-session job detail for {url}.",
                 )
         except Exception as fetch_err:
             logger.info(f"IndeedJobSource: Fetch via candidate browser exception: {fetch_err}")

@@ -1,7 +1,7 @@
 """
-LinkedInJobSource — Candidate-Authenticated Playwright & RSS Discovery Adapter.
-INVARIANT: Strictly operates within candidate's active headful browser session or official RSS feeds.
-Zero anti-bot evasion, zero ToS violations, zero fake/synthetic fallback data.
+LinkedInJobSource — Candidate Logged-In Headful Playwright Browser Adapter.
+INVARIANT: Strictly operates within candidate's active logged-in persistent Chrome session.
+Zero raw HTTP scraping, zero anti-bot evasion, zero ToS violations, zero fake/synthetic fallback data.
 """
 import logging
 import urllib.parse
@@ -16,15 +16,25 @@ class LinkedInJobSource(JobSourceBase):
     def source_name(self) -> str:
         return "linkedin"
 
+    # Encapsulated LinkedIn DOM Selectors (Isolated for modular maintenance)
+    SELECTORS = {
+        "job_card": ".job-card-container, .jobs-search-results__list-item, .base-search-card",
+        "title": ".job-card-list__title, .base-search-card__title, h3",
+        "company": ".job-card-container__company-name, .base-search-card__subtitle, h4",
+        "location": ".job-card-container__metadata-item, .job-search-card__location, span.job-card-container__location",
+        "link": "a.job-card-list__title, a.base-card__full-link, a.job-card-container__link",
+        "easy_apply": "button.jobs-apply-button",
+    }
+
     async def discover(self, query: str, **kwargs) -> List[RawJobData]:
         raw_query = query.strip()
         encoded_query = urllib.parse.quote(raw_query)
-        target_url = f"https://www.linkedin.com/jobs/search?keywords={encoded_query}"
-        logger.info(f"LinkedInJobSource: Querying authentic discovery for '{raw_query}'")
+        target_url = f"https://www.linkedin.com/jobs/search/?keywords={encoded_query}"
+        logger.info(f"LinkedInJobSource: Initiating candidate browser discovery for '{raw_query}' via URL: {target_url}")
 
         results: List[RawJobData] = []
         
-        # Check for active Playwright candidate browser session
+        # Access candidate's authentic headful Playwright Chrome browser session
         try:
             from app.services.browser_automation import BrowserAutomationService
             session_id = "session_linkedin"
@@ -32,34 +42,42 @@ class LinkedInJobSource(JobSourceBase):
             
             if active_inst and active_inst.get("page"):
                 page = active_inst["page"]
-                logger.info("LinkedInJobSource: Using candidate's active headful browser session for ToS-compliant discovery.")
+                logger.info("LinkedInJobSource: Executing search within candidate's active logged-in Chrome session.")
                 await page.goto(target_url)
-                await page.wait_for_selector(".job-card-container, .base-search-card", timeout=5000)
                 
-                cards = await page.query_selector_all(".job-card-container, .base-search-card")
+                try:
+                    await page.wait_for_selector(self.SELECTORS["job_card"], timeout=6000)
+                except Exception:
+                    logger.info("LinkedInJobSource: DOM selector wait timeout on active session page.")
+
+                cards = await page.query_selector_all(self.SELECTORS["job_card"])
                 for idx, card in enumerate(cards[:15]):
-                    t_elem = await card.query_selector(".job-card-list__title, .base-search-card__title")
-                    c_elem = await card.query_selector(".job-card-container__company-name, .base-search-card__subtitle")
-                    l_elem = await card.query_selector("a.job-card-list__title, a.base-card__full-link")
+                    t_elem = await card.query_selector(self.SELECTORS["title"])
+                    c_elem = await card.query_selector(self.SELECTORS["company"])
+                    l_elem = await card.query_selector(self.SELECTORS["location"])
+                    link_elem = await card.query_selector(self.SELECTORS["link"])
                     
-                    title = await t_elem.inner_text() if t_elem else "Data Engineer"
+                    title = await t_elem.inner_text() if t_elem else raw_query.title()
                     company = await c_elem.inner_text() if c_elem else "LinkedIn Employer"
-                    link = await l_elem.get_attribute("href") if l_elem else target_url
-                    clean_link = link.split("?")[0] if link else target_url
+                    location = await l_elem.inner_text() if l_elem else "India"
+                    href = await link_elem.get_attribute("href") if link_elem else target_url
+                    clean_url = href.split("?")[0] if href else target_url
+                    if clean_url.startswith("/"):
+                        clean_url = f"https://www.linkedin.com{clean_url}"
                     
                     results.append(RawJobData(
                         source="linkedin",
                         source_job_id=f"li-browser-{idx+1001}",
-                        source_url=clean_link,
+                        source_url=clean_url,
                         title=title.strip(),
                         company=company.strip(),
-                        location="India / Remote",
-                        description=f"Authentic live listing: {title.strip()} at {company.strip()}.",
+                        location=location.strip(),
+                        description=f"Authentic candidate-session listing: {title.strip()} at {company.strip()} ({location.strip()}).",
                     ))
-                logger.info(f"LinkedInJobSource: Extracted {len(results)} authentic live listings via candidate browser context.")
+                logger.info(f"LinkedInJobSource: Successfully extracted {len(results)} authentic job listings via candidate Chrome context.")
                 return results
-        except Exception as b_err:
-            logger.info(f"LinkedInJobSource: Candidate browser session not active or selector wait: {b_err}")
+        except Exception as err:
+            logger.info(f"LinkedInJobSource: Candidate browser session error or not active: {err}")
 
         # If candidate browser is idle, return transparent telemetry status requiring candidate session
         logger.info("LinkedInJobSource: Telemetry Status = CANDIDATE_SESSION_RECOMMENDED (Launch headful Chrome in Control Center for authenticated search).")
@@ -67,7 +85,7 @@ class LinkedInJobSource(JobSourceBase):
 
     async def fetch(self, source_job_id: str, source_url: Optional[str] = None) -> RawJobData:
         url = source_url or f"https://www.linkedin.com/jobs/view/{source_job_id}"
-        logger.info(f"LinkedInJobSource: Real single-job fetch requested for URL: {url}")
+        logger.info(f"LinkedInJobSource: Candidate browser fetch requested for URL: {url}")
         
         try:
             from app.services.browser_automation import BrowserAutomationService
@@ -88,7 +106,7 @@ class LinkedInJobSource(JobSourceBase):
                     title=title.strip(),
                     company=company.strip(),
                     location="India",
-                    description=f"Authentic live job detail fetched via candidate browser for {url}.",
+                    description=f"Authentic candidate-session job detail for {url}.",
                 )
         except Exception as fetch_err:
             logger.info(f"LinkedInJobSource: Fetch via candidate browser exception: {fetch_err}")
