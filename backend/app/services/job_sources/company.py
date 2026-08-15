@@ -17,7 +17,7 @@ logger = logging.getLogger("app.services.job_sources.company")
 class CompanyJobSource(JobSourceBase):
     @property
     def source_name(self) -> str:
-        return "company"
+        return "company_careers"
 
     async def discover(self, query: str, **kwargs) -> List[RawJobData]:
         raw_query = query.strip().lower()

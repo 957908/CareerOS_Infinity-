@@ -37,7 +37,7 @@ class BaseSiteAdapter:
     async def prepare_submission(self, form_fields: List[Dict[str, Any]]) -> Dict[str, Any]:
         raise NotImplementedError
 
-    async def execute_submission(self, page_context: Any, approval_token: str, guard_payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_submission(self, approval_token: str, guard_payload: Dict[str, Any], page_context: Any = None) -> Dict[str, Any]:
         raise NotImplementedError
 
 
