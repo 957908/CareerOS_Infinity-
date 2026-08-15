@@ -61,3 +61,6 @@ class CompanyJobSource(JobSourceBase):
             company=raw.get("company_name") or raw.get("company") or "Target Company",
             description=raw.get("description", ""),
         )
+
+# Alias for backward compatibility with job_discovery_service imports
+CompanyCareersJobSource = CompanyJobSource
