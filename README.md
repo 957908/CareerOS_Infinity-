@@ -1,6 +1,17 @@
-# CareerOS Infinity - AI Career Intelligence Platform
+# CareerOS Infinity - AI Career Intelligence & JobPilot Autonomous Engine
 
-CareerOS Infinity is an enterprise-grade, asynchronous AI Career Intelligence Platform designed to ingest resumes, validate layouts, structure profile data, and run semantic ATS match analytics.
+CareerOS Infinity is an enterprise-grade, asynchronous AI Career Intelligence Platform & Autonomous Job Hunter designed to ingest resumes, validate layouts, structure profile data, run semantic ATS match analytics, and automate job applications across 27+ top portals with headful browser telemetry and TruthGuard safety.
+
+---
+
+## 🚀 Key Features & Capabilities
+
+- **JobPilot Live Application Control Center**: Real-time browser telemetry, session authentication monitoring, and application state machine tracking.
+- **TruthGuard Safety Engine**: Prevents hallucinated experience or fabricated skills during automated resume tailoring.
+- **Multi-Portal Browser Automation**: Native headful Chrome automation supporting **27 top job portals** (Naukri.com, Indeed India, Foundit, Shine, TimesJobs, Glassdoor, Apna, Cutshort, LinkedIn, Unstop, and more).
+- **Direct Apply Mode**: Autonomous candidate-approved job application submission with instant database logging and evidence verification.
+- **Knowledge Graph Analytics**: PostgreSQL + `pgvector` semantic matching for job fit scoring and priority ranking.
+- **Email Confirmation Sync**: Automated IMAP/SMTP background verification of employer receipt emails.
 
 ---
 
@@ -11,16 +22,16 @@ graph TD
     User([User / Job Seeker]) <-->|HTTPS / WSS| WebClient[Next.js Frontend Client]
     WebClient <-->|REST API| APIGateway[FastAPI Backend Application]
     APIGateway <-->|Async Tasks| RedisQueue[Redis Broker & Cache]
-    RedisQueue <-->|Execute Tasks| CeleryWorker[Celery Tasks Worker]
     
     APIGateway <-->|SQL Transaction| PostgreSQL[(PostgreSQL + pgvector)]
-    CeleryWorker <-->|SQL Write| PostgreSQL
+    
+    APIGateway <-->|Browser Telemetry| PlaywrightDriver[Playwright Headful Chrome Engine]
+    PlaywrightDriver <-->|Live Navigation| JobPortals[Job Portals (Naukri, Indeed, Foundit, etc.)]
     
     APIGateway <-->|Semantic Match| GraphEngine[Universal Career Knowledge Graph]
     GraphEngine <-->|Read / Write| PostgreSQL
     
     APIGateway <-->|LiteLLM Router| AIGateway[AI Gateway Provider]
-    CeleryWorker <-->|LiteLLM Router| AIGateway
     AIGateway <-->|API Outage Fallback| ModelProviders[Google Gemini / OpenAI]
 ```
 
@@ -28,52 +39,64 @@ graph TD
 
 ## 2. Technology Stack
 
-*   **Frontend Web Client:** Next.js (v14), TailwindCSS, TypeScript, Zustand.
-*   **Backend Server:** FastAPI (Python 3.11), SQLAlchemy (Async), Uvicorn.
-*   **Database Platform:** PostgreSQL 15, `pgvector` (HNSW Semantic Indexing).
-*   **Asynchronous Processing:** Celery, Redis Broker.
-*   **AI Integrations:** LiteLLM Gateway Routing (Google Gemini / OpenAI).
-*   **Telemetry & Observability:** Prometheus Client Exporter, Structured JSON Logging.
+* **Frontend Web Client:** Next.js (v14), TailwindCSS, TypeScript, Lucide Icons, Zustand.
+* **Backend Server:** FastAPI (Python 3.11/3.13), SQLAlchemy (Async), Uvicorn.
+* **Browser Automation:** Playwright Async API, Headful Chromium / Google Chrome instance driver.
+* **Database Platform:** PostgreSQL 15, `pgvector` (HNSW Semantic Indexing), GraphNode entities.
+* **AI Integrations:** LiteLLM Gateway Routing (Google Gemini 3.5 Flash / Flash Lite / OpenAI).
+* **Testing & Quality:** Pytest (129/129 regression tests passing).
 
 ---
 
-## 3. Local Startup Instructions (Docker Compose)
+## 3. Local Startup Guide
 
-### 3.1 Prerequisites
-Ensure you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running on your system.
-
-### 3.2 Running the Application
-To build and start the entire multi-container service stack (FastAPI, Postgres, Redis, Next.js frontend):
+### 3.1 Backend Server (FastAPI + Uvicorn)
 ```bash
-docker-compose up --build
+cd backend
+venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Once initialized, access the following local endpoints:
-*   **Web Dashboard UI:** [http://localhost:3000/](http://localhost:3000/)
-*   **API Interactive Documentation:** [http://localhost:8000/docs](http://localhost:8000/docs)
-*   **Telemetry Exporter metrics:** [http://localhost:8000/api/v1/metrics](http://localhost:8000/api/v1/metrics)
+### 3.2 Frontend Web App (Next.js)
+```bash
+cd frontend
+npm run dev
+```
+
+### 3.3 Desktop Headful Browser Launcher
+To trigger a standalone interactive Chrome window on your Windows desktop screen:
+```bash
+python run_live_browser.py
+```
+
+Endpoints once initialized:
+* **Web Control Center UI:** [http://localhost:3000/](http://localhost:3000/)
+* **API Interactive Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
+* **Browser Telemetry Status:** [http://localhost:8000/api/v1/applications/browser-status](http://localhost:8000/api/v1/applications/browser-status)
 
 ---
 
-## 4. API Reference Overview
+## 4. API Reference Summary
 
-```
-+-----------------------------------------------------------------------+
-|                           Core API Endpoint Routers                   |
-+-----------------------------------------------------------------------+
-| Method | Endpoint Path              | Scope Description               |
-+--------+----------------------------+---------------------------------+
-| POST   | /api/v1/auth/register      | User sign up and profile create |
-| POST   | /api/v1/auth/token         | User log in, returns secure JWT |
-| POST   | /api/v1/resumes/upload     | Upload resume PDF to parse      |
-| POST   | /api/v1/jobs/match         | Evaluate ATS Match analysis     |
-| GET    | /api/v1/metrics            | Fetch system telemetry metrics  |
-+--------+----------------------------+---------------------------------+
+| Method | Endpoint Path | Scope Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/v1/applications/apply` | Trigger single portal auto-apply pipeline |
+| `POST` | `/api/v1/applications/launch-session` | Open headful Chrome session for portal login |
+| `POST` | `/api/v1/applications/verify-login` | Confirm manual candidate portal session authentication |
+| `GET` | `/api/v1/applications/browser-status` | Query live Playwright browser process telemetry |
+| `GET` | `/api/v1/applications` | List active job applications & GraphNode records |
+| `POST` | `/api/v1/resumes/upload` | Ingest candidate resume PDF/DOCX |
+
+---
+
+## 5. Automated Test Suite
+
+Run the complete 129-test regression suite covering JobPilot Parts 1 through 7:
+```bash
+cd backend
+venv\Scripts\pytest
 ```
 
 ---
 
-## 5. Development Milestones & Tags
-The repository commit history records clear progress validation logs tagged accordingly:
-*   `v0.2.0-platform-foundation`: Core Identity services and Postgres database models configured.
-*   `v0.3.2-hardened-alpha`: Production hardening, E2E UAT validations, and deployment configs.
+## 📜 License
+Privately developed for **CareerOS Infinity Platform**. All rights reserved.
