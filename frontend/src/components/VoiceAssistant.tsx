@@ -23,8 +23,22 @@ export default function VoiceAssistant() {
     window.speechSynthesis.cancel(); // stop previous speech
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
+    utterance.rate = 0.95; // Smooth natural human speech rate
     utterance.pitch = 1.0;
+
+    // Pick premium natural voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const naturalVoice = voices.find(v => 
+      v.name.includes("Natural") || 
+      v.name.includes("Google US English") || 
+      v.name.includes("Google UK English Female") || 
+      v.name.includes("Samantha") ||
+      (v.lang.startsWith("en") && !v.name.includes("eSpeak"))
+    );
+    if (naturalVoice) {
+      utterance.voice = naturalVoice;
+    }
+
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
