@@ -33,10 +33,16 @@ export default function DashboardPage() {
         const res = await fetch('http://localhost:8000/api/v1/applications');
         if (res.ok) {
           const apps = await res.json();
+          
+          // Calculate dynamic average ATS match score from apps
+          const totalAts = apps.reduce((acc: number, item: any) => acc + (item.ats_score || item.job_fit_score || 85), 0);
+          const computedAvgAts = apps.length > 0 ? Math.round(totalAts / apps.length) : 85;
+
           setStats(prev => ({
             ...prev,
             activeApplications: apps.length,
-            appliesThisWeek: apps.length
+            appliesThisWeek: apps.length,
+            avgAtsMatch: computedAvgAts
           }));
 
           const activities = apps.slice(0, 10).map((app: any) => ({
