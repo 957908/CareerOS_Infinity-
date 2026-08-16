@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navigation from '../components/Navigation';
 import CommandPalette from '../components/CommandPalette';
+import VoiceAssistant from '../components/VoiceAssistant';
 
 export const metadata: Metadata = {
   title: 'CareerOS Infinity — Honest Job Hunter Platform',
@@ -27,6 +28,9 @@ export default function RootLayout({
           
           {/* Global Command Palette interface */}
           <CommandPalette />
+
+          {/* AI Voice Control Assistant */}
+          <VoiceAssistant />
         </main>
         
       </body>
