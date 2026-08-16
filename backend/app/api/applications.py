@@ -308,7 +308,6 @@ async def autonomous_run_endpoint(
 
 
 @router.post("/sync-email", status_code=status.HTTP_200_OK)
-@router.post("/sync-emails", status_code=status.HTTP_200_OK)
 async def sync_email_endpoint(
     payload: dict = None,
     session: AsyncSession = Depends(get_db_session)
@@ -341,6 +340,14 @@ async def sync_email_endpoint(
     except Exception as e:
         logger.error(f"Email sync error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/sync-emails", status_code=status.HTTP_200_OK)
+async def sync_emails_alias_endpoint(
+    payload: dict = None,
+    session: AsyncSession = Depends(get_db_session)
+):
+    return await sync_email_endpoint(payload=payload, session=session)
 
 
 @router.post("/emergency-stop", status_code=status.HTTP_200_OK)
