@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mic, MicOff, Volume2, Sparkles, X, Bot, Terminal, Send, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Mic, MicOff, Volume2, Sparkles, X, Bot, Terminal, Send, RefreshCw, ShieldCheck, UserCheck, Compass } from 'lucide-react';
 
 export default function VoiceAssistant() {
   const router = useRouter();
@@ -11,9 +11,11 @@ export default function VoiceAssistant() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [typedCommand, setTypedCommand] = useState('');
-  const [responseMessage, setResponseMessage] = useState('Namaste Niraj! I am your CareerOS AI Backend Agent. Speak or type any command to execute direct backend tasks!');
+  const [responseMessage, setResponseMessage] = useState(
+    'Namaste Niraj! I am KAI, your official CareerOS Project Representative. I manage your live job discovery, resume tailoring, application submissions, and IMAP receipt verifications with TruthGuard safety. Speak or type any instruction!'
+  );
   const [executionLogs, setExecutionLogs] = useState<string[]>([
-    "AGENT_INITIALIZED: Ready for voice or typed instructions."
+    "KAI_INITIALIZED: Project Representative ready for career operations."
   ]);
   const [healingStatus, setHealingStatus] = useState<string>('HEALTHY');
   const [isOpen, setIsOpen] = useState(false);
@@ -65,7 +67,7 @@ export default function VoiceAssistant() {
 
     recognition.onstart = () => {
       setIsListening(true);
-      setTranscript('Listening for your voice command...');
+      setTranscript('Listening to your instruction...');
     };
 
     recognition.onresult = (event: any) => {
@@ -81,7 +83,7 @@ export default function VoiceAssistant() {
 
     recognition.onend = () => {
       setIsListening(false);
-      if (transcript && transcript !== 'Listening for your voice command...') {
+      if (transcript && transcript !== 'Listening to your instruction...') {
         sendBackendAgentCommand(transcript);
       }
     };
@@ -104,12 +106,13 @@ export default function VoiceAssistant() {
 
       if (res.ok) {
         const data = await res.json();
-        setResponseMessage(data.agent_reply || "Backend agent task executed.");
-        setExecutionLogs(data.logs || ["EXECUTED: Backend agent task finished."]);
+        const formattedReply = `KAI: ${data.agent_reply || "Task executed successfully."}`;
+        setResponseMessage(formattedReply);
+        setExecutionLogs(data.logs || ["EXECUTED: Representative task finished."]);
         setHealingStatus(data.self_healing_status || "EXECUTED_CLEANLY");
 
         // Speak reply via Text-to-Speech
-        speakText(data.agent_reply);
+        speakText(data.agent_reply || formattedReply);
 
         // Perform client-side route navigation if requested by backend agent
         if (data.navigate_url) {
@@ -118,7 +121,7 @@ export default function VoiceAssistant() {
       } else {
         // Handle Error & Self-Heal Trigger
         setHealingStatus("ERROR_DETECTED");
-        const errReply = "Backend server error detected. Auto-healing agent sequence initiated.";
+        const errReply = "KAI: Server response notice detected. Initiating autonomous self-healing sequence.";
         setResponseMessage(errReply);
         setExecutionLogs([
           "ERROR_DETECTED: Backend endpoint returned non-200 code.",
@@ -128,9 +131,9 @@ export default function VoiceAssistant() {
         speakText(errReply);
       }
     } catch (err) {
-      console.error("Backend agent communication error:", err);
+      console.error("KAI Representative communication error:", err);
       setHealingStatus("AUTO_HEALED");
-      const errReply = "Network latency detected. Self-healing fallback active.";
+      const errReply = "KAI: Network latency detected. Applying zero-crash self-healing guarantee.";
       setResponseMessage(errReply);
       setExecutionLogs([
         `EXCEPTION_CAPTURED: ${err}`,
@@ -157,14 +160,14 @@ export default function VoiceAssistant() {
       <div className="fixed bottom-6 right-6 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-900/60 border border-emerald-400/40 transition-all transform hover:scale-105 flex items-center gap-2 font-bold text-xs"
+          className="p-4 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-2xl shadow-emerald-900/60 border border-emerald-400/40 transition-all transform hover:scale-105 flex items-center gap-2.5 font-bold text-xs"
         >
-          <Bot size={20} className="animate-pulse" />
-          <span>AI Backend Voice Agent</span>
+          <Bot size={20} className="animate-pulse text-emerald-200" />
+          <span>KAI — Project Representative</span>
         </button>
       </div>
 
-      {/* Voice Assistant Modal Drawer */}
+      {/* Representative Drawer Modal */}
       {isOpen && (
         <div className="fixed bottom-24 right-6 w-96 max-w-[90vw] bg-neutral-900/95 backdrop-blur-md p-6 rounded-2xl border border-neutral-800 shadow-2xl z-50 space-y-4 max-h-[80vh] overflow-y-auto">
           
@@ -173,9 +176,11 @@ export default function VoiceAssistant() {
             <div className="flex items-center gap-2">
               <Sparkles size={18} className="text-emerald-400" />
               <div>
-                <h3 className="text-sm font-bold text-white">CareerOS AI Agent Controller</h3>
-                <span className="text-[9px] text-emerald-400 font-mono flex items-center gap-1">
-                  <ShieldCheck size={10} /> Self-Healing Active ({healingStatus})
+                <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
+                  KAI <span className="text-[10px] font-medium text-emerald-400 px-1.5 py-0.2 bg-emerald-950 rounded border border-emerald-800">Project Representative</span>
+                </h3>
+                <span className="text-[9px] text-neutral-400 font-mono flex items-center gap-1">
+                  <ShieldCheck size={10} className="text-emerald-400" /> TruthGuard Safe ({healingStatus})
                 </span>
               </div>
             </div>
@@ -184,10 +189,10 @@ export default function VoiceAssistant() {
             </button>
           </div>
 
-          {/* AI Spoken Response Display */}
+          {/* Representative Spoken Response Display */}
           <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800 space-y-2">
             <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <Volume2 size={12} className={isSpeaking ? "animate-bounce" : ""} /> AI Voice Feedback
+              <Volume2 size={12} className={isSpeaking ? "animate-bounce" : ""} /> KAI Voice Response
             </div>
             <p className="text-xs text-neutral-200 leading-relaxed font-medium">
               {responseMessage}
@@ -197,7 +202,7 @@ export default function VoiceAssistant() {
           {/* Real-time Backend Execution Log Console */}
           <div className="space-y-1">
             <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1">
-              <Terminal size={12} className="text-emerald-400" /> Real Backend Agent Execution Logs
+              <Terminal size={12} className="text-emerald-400" /> KAI Representative Execution Logs
             </div>
             <div className="p-3 bg-neutral-950 rounded-xl border border-neutral-800 font-mono text-[10px] text-emerald-300 space-y-1 max-h-32 overflow-y-auto">
               {executionLogs.map((log, idx) => (
@@ -212,7 +217,7 @@ export default function VoiceAssistant() {
           {/* Transcript Display */}
           {transcript && (
             <div className="p-2.5 bg-neutral-950 rounded-lg border border-neutral-800 text-xs text-neutral-400 font-mono">
-              <span className="text-[9px] text-neutral-500 block">Current Command:</span>
+              <span className="text-[9px] text-neutral-500 block">Candidate Instruction:</span>
               "{transcript}"
             </div>
           )}
@@ -234,23 +239,23 @@ export default function VoiceAssistant() {
                 </>
               ) : isProcessing ? (
                 <>
-                  <RefreshCw size={16} className="animate-spin" /> Processing Backend Action...
+                  <RefreshCw size={16} className="animate-spin" /> KAI Executing Task...
                 </>
               ) : (
                 <>
-                  <Mic size={16} /> Speak Voice Command
+                  <Mic size={16} /> Speak to KAI
                 </>
               )}
             </button>
           </div>
 
-          {/* Text Command Input Form (Type command or Auto-Fix right here!) */}
+          {/* Text Command Input Form */}
           <form onSubmit={handleTypedSubmit} className="flex gap-1.5 pt-1">
             <input
               type="text"
               value={typedCommand}
               onChange={(e) => setTypedCommand(e.target.value)}
-              placeholder="Or type command / fix instruction here..."
+              placeholder="Or type instruction for KAI..."
               className="flex-1 px-3 py-2 bg-neutral-950 border border-neutral-800 rounded-lg text-xs text-white focus:outline-none focus:border-emerald-500 font-sans"
             />
             <button
@@ -264,14 +269,14 @@ export default function VoiceAssistant() {
 
           {/* Quick Command Pills */}
           <div className="text-[10px] text-neutral-500 space-y-1 border-t border-neutral-800/60 pt-2">
-            <span className="font-semibold text-neutral-400">Quick Commands & Self-Healing Triggers:</span>
+            <span className="font-semibold text-neutral-400">Ask KAI to execute:</span>
             <div className="flex flex-wrap gap-1">
               {[
+                'Manage my project',
                 'Search Data Engineer jobs', 
                 'Verify application emails', 
                 'Show master profile', 
-                'Launch headful Chrome',
-                'Self-heal error'
+                'Launch Chrome browser'
               ].map((hint, idx) => (
                 <button
                   key={idx}
