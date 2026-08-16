@@ -19,31 +19,57 @@ export default function VoiceAssistant() {
   ]);
   const [healingStatus, setHealingStatus] = useState<string>('HEALTHY');
   const [isOpen, setIsOpen] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Pre-load female natural voices asynchronously
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    function updateVoices() {
+      const vList = window.speechSynthesis.getVoices();
+      setAvailableVoices(vList);
+    }
+
+    updateVoices();
+    window.speechSynthesis.onvoiceschanged = updateVoices;
+  }, []);
 
   function speakText(text: string) {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
+    // Ensure Chrome audio context is unpaused
+    window.speechSynthesis.resume();
     window.speechSynthesis.cancel(); // stop previous speech
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95; // Smooth natural human speech rate
-    utterance.pitch = 1.0;
+    utterance.rate = 0.92; // Natural, clear female speech cadence
+    utterance.pitch = 1.05; // Pleasant natural female pitch
 
-    // Pick premium natural voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const naturalVoice = voices.find(v => 
-      v.name.includes("Natural") || 
+    const vList = availableVoices.length > 0 ? availableVoices : window.speechSynthesis.getVoices();
+    
+    // Select natural female voice
+    const femaleVoice = vList.find(v => 
+      v.name.includes("Zira") || 
       v.name.includes("Google US English") || 
       v.name.includes("Google UK English Female") || 
+      v.name.includes("Jenny") || 
+      v.name.includes("Aria") || 
       v.name.includes("Samantha") ||
-      (v.lang.startsWith("en") && !v.name.includes("eSpeak"))
+      v.name.includes("Victoria") ||
+      (v.name.toLowerCase().includes("female") && v.lang.startsWith("en")) ||
+      (v.lang.startsWith("en") && !v.name.includes("David") && !v.name.includes("Mark"))
     );
-    if (naturalVoice) {
-      utterance.voice = naturalVoice;
+
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
     }
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+    utterance.onerror = (e) => {
+      console.error("Speech synthesis error:", e);
+      setIsSpeaking(false);
+    };
 
     window.speechSynthesis.speak(utterance);
   }
@@ -191,8 +217,16 @@ export default function VoiceAssistant() {
 
           {/* Representative Spoken Response Display */}
           <div className="p-4 bg-neutral-950 rounded-xl border border-neutral-800 space-y-2">
-            <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
-              <Volume2 size={12} className={isSpeaking ? "animate-bounce" : ""} /> KAI Voice Response
+            <div className="flex justify-between items-center text-[10px] text-emerald-400 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-1">
+                <Volume2 size={12} className={isSpeaking ? "animate-bounce" : ""} /> KAI Female Natural Voice Response
+              </span>
+              <button
+                onClick={() => speakText(responseMessage)}
+                className="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-emerald-400 border border-neutral-700 font-sans text-[9px] flex items-center gap-1"
+              >
+                <Volume2 size={10} /> Speak Voice
+              </button>
             </div>
             <p className="text-xs text-neutral-200 leading-relaxed font-medium">
               {responseMessage}
