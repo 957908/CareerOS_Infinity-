@@ -16,40 +16,46 @@ def get_user_repository(session: AsyncSession = Depends(get_db_session)) -> User
     return UserRepository(session)
 
 async def get_current_user(
+    token_subject: str = Depends(verify_token_subject),
     user_repo: UserRepository = Depends(get_user_repository)
 ) -> User:
     """
-    Dependency resolving the active user object.
-    Bypasses JWT auth in local development and returns a default mock user.
-    Handles DB connection pool drops gracefully.
+    Dependency resolving the active authenticated user object from valid JWT token.
+    Raises HTTP 401 Unauthorized if token is invalid, expired, or missing.
     """
     import uuid
-    mock_id = "00000000-0000-0000-0000-000000000000"
-    logger.info(f"UAT Mode: resolving default mock user ID: {mock_id}")
-    
     try:
-        user = await user_repo.get_by_id(mock_id)
+        user = await user_repo.get_by_id(token_subject)
         if not user:
-            user = User(
-                id=uuid.UUID(mock_id),
-                email="mockuser@careeros.local",
-                full_name="Mock Developer",
-                hashed_password="mock_password",
-                role=UserRole.MEMBER,
-                is_active=True
+            # Handle standard mock UUID if token subject explicitly signed for test runner
+            if token_subject == "00000000-0000-0000-0000-000000000000":
+                user = User(
+                    id=uuid.UUID(token_subject),
+                    email="mockuser@careeros.local",
+                    full_name="Mock Developer",
+                    hashed_password="mock_password",
+                    role=UserRole.MEMBER,
+                    is_active=True
+                )
+                user_repo.session.add(user)
+                await user_repo.session.flush()
+                return user
+            from fastapi import HTTPException, status
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User identity associated with token not found",
+                headers={"WWW-Authenticate": "Bearer"},
             )
-            user_repo.session.add(user)
-            await user_repo.session.flush()
         return user
-    except Exception as db_err:
-        logger.warning(f"get_current_user: DB connection query failed ({db_err}), returning active UAT User context.")
-        return User(
-            id=uuid.UUID(mock_id),
-            email="mockuser@careeros.local",
-            full_name="Mock Developer",
-            hashed_password="mock_password",
-            role=UserRole.MEMBER,
-            is_active=True
+    except Exception as err:
+        from fastapi import HTTPException, status
+        if isinstance(err, HTTPException):
+            raise err
+        logger.error(f"get_current_user lookup failure: {err}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 class RoleChecker:

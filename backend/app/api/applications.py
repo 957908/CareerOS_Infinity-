@@ -106,16 +106,20 @@ async def list_applications_endpoint(
         for a in apps
     ]
 
-    # Include GraphNode APPLICATION entities (used by autonomous job hunter agent live scraper)
+    # Include GraphNode APPLICATION entities (used by autonomous job hunter agent live scraper), strictly scoped to current_user
     try:
         from app.models.graph import GraphNode
-        q_graph = select(GraphNode.id, GraphNode.properties, GraphNode.created_at).filter(GraphNode.entity_type == "APPLICATION").order_by(GraphNode.created_at.desc()).limit(20)
+        q_graph = select(GraphNode.id, GraphNode.properties, GraphNode.created_at).filter(GraphNode.entity_type == "APPLICATION").order_by(GraphNode.created_at.desc()).limit(50)
         res_graph = await session.execute(q_graph)
         graph_rows = res_graph.all()
 
         existing_ids = {a["id"] for a in app_list}
         for g_id_val, g_props, g_created_at in graph_rows:
             props = g_props or {}
+            # Scope to user if user_id property is present on node
+            node_user_id = props.get("user_id")
+            if node_user_id and str(node_user_id) != str(current_user.id):
+                continue
             g_id = props.get("id") or g_id_val
             if g_id not in existing_ids:
                 app_list.append({

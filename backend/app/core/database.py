@@ -38,10 +38,12 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
+            if session.is_active:
+                await session.commit()
         except Exception as e:
             logger.error(f"Database session encountered error, rolling back: {e}")
-            await session.rollback()
+            if session.is_active:
+                await session.rollback()
             raise
         finally:
             await session.close()

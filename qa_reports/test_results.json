@@ -1,0 +1,198 @@
+{
+  "summary": {
+    "total_tests": 17,
+    "passed": 8,
+    "failed": 9,
+    "partial": 0,
+    "blocked": 0
+  },
+  "test_cases": [
+    {
+      "test_id": "TC-SMK-001",
+      "category": "Smoke",
+      "feature": "Backend Startup",
+      "scenario": "Health Check Endpoint",
+      "input": "GET /health",
+      "expected": "200 OK with status: healthy",
+      "actual": "Status: 200, Body: {'status': 'healthy', 'version': '1.0.0'}",
+      "status": "PASS",
+      "evidence": "Latency: 64.80ms"
+    },
+    {
+      "test_id": "TC-SMK-002",
+      "category": "Smoke",
+      "feature": "Frontend Startup",
+      "scenario": "Root Page GET",
+      "input": "GET http://localhost:3000",
+      "expected": "200 OK",
+      "actual": "Status: 200",
+      "status": "PASS",
+      "evidence": "Latency: 64.49ms"
+    },
+    {
+      "test_id": "TC-ATH-001",
+      "category": "Auth",
+      "feature": "User Registration",
+      "scenario": "Valid Payload Registration",
+      "input": "{'email': 'qa_audit_1787044815@careeros.io', 'password': 'TestPassword123!', 'full_name': 'QA Master Auditor'}",
+      "expected": "201 Created",
+      "actual": "Status: 0, Body: timed out",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-ATH-002",
+      "category": "Auth",
+      "feature": "User Login",
+      "scenario": "Valid Credentials Login",
+      "input": "{'email': 'qa_audit_1787044815@careeros.io', 'password': 'TestPassword123!'}",
+      "expected": "200 OK",
+      "actual": "Status: 500, Body: Internal Server Error",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-ATH-003",
+      "category": "Auth",
+      "feature": "User Login (Negative)",
+      "scenario": "Invalid Password",
+      "input": "{'email': 'qa_audit_1787044815@careeros.io', 'password': 'WrongPassword!'}",
+      "expected": "401 Unauthorized",
+      "actual": "Status: 500",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-API-001",
+      "category": "API",
+      "feature": "Job Postings Feed",
+      "scenario": "GET /api/v1/jobs",
+      "input": "GET /jobs",
+      "expected": "200 OK",
+      "actual": "Status: 500, Body: Internal Server Error",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-API-002",
+      "category": "API",
+      "feature": "Browser Status Telemetry",
+      "scenario": "GET /api/v1/applications/browser-status",
+      "input": "GET telemetry",
+      "expected": "200 OK with browser status details",
+      "actual": "Status: 200, Mode: LIVE, Browser: Chromium (Google Chrome)",
+      "status": "PASS",
+      "evidence": "Latency: 8.00ms"
+    },
+    {
+      "test_id": "TC-API-003",
+      "category": "API",
+      "feature": "Resumes List Endpoint",
+      "scenario": "GET /api/v1/resumes",
+      "input": "GET /resumes",
+      "expected": "200 OK",
+      "actual": "Status: 404",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-API-004",
+      "category": "API",
+      "feature": "Communications Router",
+      "scenario": "GET /api/v1/communications",
+      "input": "GET /communications",
+      "expected": "200 OK",
+      "actual": "Status: 500",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-VAL-001",
+      "category": "Input Validation",
+      "feature": "Negative Query Parameter",
+      "scenario": "Limit = -5",
+      "input": "limit=-5",
+      "expected": "422 Unprocessable Entity / 400 Bad Request",
+      "actual": "Status: 422, Body: {'detail': [{'type': 'greater_than_equal', 'loc': ['query', 'limit'], 'msg': 'Input should be greater than or equal to 1', 'input': '-5', 'ctx': {'ge': 1}}]}",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-VAL-002",
+      "category": "Input Validation",
+      "feature": "Create Application (Negative)",
+      "scenario": "Missing job_id payload",
+      "input": "Empty JSON {}",
+      "expected": "400 Bad Request / 422 Unprocessable Entity",
+      "actual": "Status: 422, Detail: {'detail': [{'type': 'missing', 'loc': ['body'], 'msg': 'Field required', 'input': None}]}",
+      "status": "PASS",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-SEC-001",
+      "category": "Security",
+      "feature": "SQL Injection Protection",
+      "scenario": "Parameterized Query with SQLi String",
+      "input": "' OR '1'='1",
+      "expected": "Safe handling",
+      "actual": "Status: 500",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-SEC-002",
+      "category": "Security",
+      "feature": "XSS Injection Protection",
+      "scenario": "Search input script tag",
+      "input": "<script>alert('xss')</script>",
+      "expected": "Handled safely",
+      "actual": "Status: 500",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-BUS-001",
+      "category": "Business Logic",
+      "feature": "ATS Score Formula Calculation",
+      "scenario": "4 matched out of 5 required skills",
+      "input": "Candidate: ['python', 'fastapi', 'postgresql', 'docker'], JD: ['python', 'fastapi', 'postgresql', 'docker', 'redis']",
+      "expected": "Expected ATS Score: 80%",
+      "actual": "Actual ATS Score: 80% (Diff: 0)",
+      "status": "PASS",
+      "evidence": "Mathematical formula matched exactly."
+    },
+    {
+      "test_id": "TC-AIM-001",
+      "category": "AI/ML Validation",
+      "feature": "TruthGuard Safety Engine",
+      "scenario": "Hallucinated Experience Claim Check",
+      "input": "Led team of 100 engineers to build quantum computing cluster",
+      "expected": "TruthGuard REJECTS unsupported skill/experience claim",
+      "actual": "TruthGuard Status: REJECTED (Unbacked claim detected)",
+      "status": "PASS",
+      "evidence": "Prevents resume hallucination."
+    },
+    {
+      "test_id": "TC-RPT-001",
+      "category": "Reporting",
+      "feature": "Application Analytics Summary",
+      "scenario": "GET /api/v1/applications/analytics",
+      "input": "GET /analytics",
+      "expected": "200 OK",
+      "actual": "Status: 500",
+      "status": "FAIL",
+      "evidence": ""
+    },
+    {
+      "test_id": "TC-PRF-001",
+      "category": "Performance",
+      "feature": "Health Check Latency",
+      "scenario": "5 Concurrent Requests Avg Latency",
+      "input": "5x GET /health",
+      "expected": "Average Latency < 200ms",
+      "actual": "Actual Avg Latency: 11.76ms",
+      "status": "PASS",
+      "evidence": ""
+    }
+  ]
+}

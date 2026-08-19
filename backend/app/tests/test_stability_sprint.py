@@ -205,3 +205,14 @@ def test_imap_credentials_fernet_encrypted():
     assert enc != raw_pass
     dec = CredentialVault.decrypt_password(enc)
     assert dec == raw_pass
+
+def test_security_jwt_token_creation_and_verification():
+    """
+    P0 Security Fix Test: Verifies JWT token generation and validation.
+    """
+    from app.core.security import create_access_token, verify_token_subject
+    import asyncio
+    user_id = "11111111-1111-1111-1111-111111111111"
+    token = create_access_token(user_id)
+    subject = asyncio.run(verify_token_subject(token))
+    assert subject == user_id

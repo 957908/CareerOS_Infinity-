@@ -1,0 +1,22 @@
+============================================================
+RESUME: Nirajkadam.pdf
+============================================================
+
+[COMPETENCIES]
+- Python (general) : Intermediate
+- Java (general) : Intermediate
+- C++ (general) : Intermediate
+- C (general) : Intermediate
+- JavaScript (general) : Intermediate
+- FastAPI (general) : Intermediate
+- PostgreSQL (general) : Intermediate
+- MySQL (general) : Intermediate
+- MongoDB (general) : Intermediate
+- Docker (general) : Intermediate
+- Git (general) : Intermediate
+- Linux (general) : Intermediate
+- SQL (general) : Intermediate
+- ETL (general) : Intermediate
+
+[EXPERIENCE HISTORY]
+No prior work experience listed.

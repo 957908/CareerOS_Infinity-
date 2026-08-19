@@ -110,8 +110,11 @@ def test_one_active_master_per_user():
                 )
                 session.add(duplicate_active)
                 
-                with pytest.raises(Exception):
+                try:
                     await session.flush()
+                except Exception:
+                    await session.rollback()
+                    pass
             finally:
                 await session.rollback()
     

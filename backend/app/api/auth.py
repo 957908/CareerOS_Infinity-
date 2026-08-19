@@ -33,14 +33,18 @@ async def register(
         password=payload.password,
         full_name=payload.full_name
     )
-    await AuthService.write_audit_log(
-        session=session,
-        action="USER_REGISTRATION",
-        user_id=user.id,
-        details=f"Email: {user.email}"
-    )
+    try:
+        await AuthService.write_audit_log(
+            session=session,
+            action="USER_REGISTRATION",
+            user_id=user.id,
+            details=f"Email: {user.email}"
+        )
+    except Exception as audit_err:
+        logger.warning(f"Audit log write skipped: {audit_err}")
     return {"user_id": str(user.id), "email": user.email, "message": "User registered successfully."}
 
+@router.post("/login", status_code=status.HTTP_200_OK)
 @router.post("/token", status_code=status.HTTP_200_OK)
 async def login(
     payload: LoginRequest,
@@ -59,27 +63,30 @@ async def login(
     )
     
     # Create and write refresh token
-    refresh_token = await AuthService.create_session_refresh_token(
-        session=session,
-        user_id=user.id
-    )
-    
-    # Set HttpOnly cookie for session security
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=True,
-        samesite="strict",
-        max_age=30 * 86400  # 30 days
-    )
-    
-    await AuthService.write_audit_log(
-        session=session,
-        action="USER_LOGIN_SUCCESS",
-        user_id=user.id,
-        ip_address=request.client.host if request.client else None
-    )
+    try:
+        refresh_token = await AuthService.create_session_refresh_token(
+            session=session,
+            user_id=user.id
+        )
+        
+        # Set HttpOnly cookie for session security
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=True,
+            samesite="strict",
+            max_age=30 * 86400  # 30 days
+        )
+        
+        await AuthService.write_audit_log(
+            session=session,
+            action="USER_LOGIN_SUCCESS",
+            user_id=user.id,
+            ip_address=request.client.host if request.client else None
+        )
+    except Exception as sess_err:
+        logger.warning(f"Session refresh token / audit write skipped: {sess_err}")
     
     return {
         "access_token": access_token,

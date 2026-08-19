@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mic, MicOff, Volume2, Sparkles, X, Bot, Terminal, Send, RefreshCw, ShieldCheck, UserCheck, Compass } from 'lucide-react';
 

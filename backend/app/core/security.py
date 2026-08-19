@@ -1,8 +1,18 @@
 import logging
 import datetime
+import hashlib
 from typing import Optional
 import jwt
 from jwt import PyJWTError
+import bcrypt
+
+# Patch bcrypt 72-byte limit bug in passlib 1.7.4 on Python 3.13
+_orig_hashpw = bcrypt.hashpw
+def _safe_hashpw(password, salt):
+    if isinstance(password, bytes) and len(password) > 72:
+        password = password[:72]
+    return _orig_hashpw(password, salt)
+bcrypt.hashpw = _safe_hashpw
 
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -17,17 +27,21 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Compare raw input password against stored hash.
+    Compare raw input password against stored hash safely.
+    Pre-hashes with SHA-256 to ensure length is exactly 64 chars (< 72 bytes).
     """
     logger.info("Verifying password comparison.")
-    return pwd_context.verify(plain_password, hashed_password)
+    safe_pw = hashlib.sha256(plain_password.encode("utf-8")).hexdigest()
+    return pwd_context.verify(safe_pw, hashed_password)
 
 def get_password_hash(password: str) -> str:
     """
     Generate secure salted hash for store password.
+    Pre-hashes with SHA-256 to ensure length is exactly 64 chars (< 72 bytes).
     """
     logger.info("Generating password hash.")
-    return pwd_context.hash(password)
+    safe_pw = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return pwd_context.hash(safe_pw)
 
 def create_access_token(subject: str, expires_delta: Optional[datetime.timedelta] = None) -> str:
     """

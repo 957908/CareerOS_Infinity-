@@ -55,13 +55,14 @@ class ATSService:
                 "reasoning_metadata": parsed_analysis.get("recommendations", "Check keyword alignments.")
             }
         except Exception as e:
-            logger.error(f"ATSService: AI match execution failed ({e}), returning mock alignment results.")
+            logger.error(f"ATSService: AI match execution failed ({e}).")
             return {
-                "score": 85,
-                "confidence_score": 0.95,
+                "score": None,
+                "status": "PROVIDER_UNAVAILABLE",
+                "confidence_score": 0.0,
                 "evidence": {
-                    "matched_keywords": ["Python", "FastAPI", "System Design", "PostgreSQL"],
-                    "missing_keywords": ["Celery", "Docker"]
+                    "matched_keywords": [],
+                    "missing_keywords": []
                 },
-                "reasoning_metadata": "Mock UAT Mode: Embed explicit bullet points describing task queues and multi-stage container optimization setups."
+                "reasoning_metadata": f"ATS Analysis Provider Unavailable: {str(e)}"
             }
