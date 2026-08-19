@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-08-19T10:16:30Z",
+  "environment": "Isolated Sandbox ATS (http://127.0.0.1:8000/api/v1/test-ats)",
+  "test_suite": "app/tests/test_sandbox_ats_e2e.py",
+  "summary": {
+    "total_tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "duration_seconds": 25.10
+  },
+  "scenarios_verified": [
+    "sandbox_jobs_discovery",
+    "sandbox_application_submission_flow",
+    "sandbox_controlled_failure_400",
+    "sandbox_controlled_failure_500",
+    "sandbox_idempotency_protection",
+    "sandbox_unverified_truth_integrity"
+  ],
+  "operational_status": {
+    "live_employer_submission": "UNVERIFIED / NOT TESTED",
+    "authorized_sandbox_submission": "VERIFIED"
+  },
+  "verdict": "🟢 FINAL SUBMISSION WORKFLOW VERIFIED IN AUTHORIZED SANDBOX"
+}

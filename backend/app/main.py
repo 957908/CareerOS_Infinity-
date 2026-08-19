@@ -98,6 +98,8 @@ async def health_check() -> dict:
     logger.info("Health check endpoint invoked.")
     return {"status": "healthy", "version": settings.VERSION}
 
+from app.api.test_ats import router as test_ats_router
+
 # Register platform api routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(metrics_router, prefix=settings.API_V1_STR)
@@ -110,6 +112,7 @@ app.include_router(jobpilot_router, prefix=settings.API_V1_STR)
 app.include_router(tracking_router, prefix=settings.API_V1_STR)
 app.include_router(interviews_router, prefix=settings.API_V1_STR)
 app.include_router(career_analytics_router, prefix=settings.API_V1_STR)
+app.include_router(test_ats_router, prefix=settings.API_V1_STR)
 
 @app.websocket("/ws/interviews/{session_id}")
 async def mock_interview_websocket(websocket: WebSocket, session_id: str):
