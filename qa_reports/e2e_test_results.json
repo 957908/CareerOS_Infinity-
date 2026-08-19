@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-08-19T09:45:00Z",
+  "commit_tested": "f97212e887e415e5f3eef0d4b80e015b668753ac",
+  "e2e_workflow": {
+    "startup": "PASS",
+    "authentication": "PASS",
+    "resume_upload": "PASS",
+    "resume_parsing": "PASS",
+    "greenhouse_discovery": "PASS",
+    "jd_extraction": "PASS",
+    "user_matching": "PASS",
+    "ats_analysis": "PASS",
+    "application_preparation": "PASS",
+    "approval_guard": "PASS",
+    "application_tracking": "PASS",
+    "report_generation": "PASS"
+  },
+  "verdict": "🟡 READY WITH MINOR FIXES / HIGH-INTEGRITY VERTICAL SLICE"
+}
