@@ -79,27 +79,10 @@ class EmailSyncService:
             except Exception as imap_err:
                 logger.warning(f"EmailSync: Live IMAP sync exception: {imap_err}")
                 
-        # 2. Transparent fallback simulation for offline/UAT demonstration
+        # 2. Return truthful verification status without manufactured fallback receipts
         if not sync_results:
-            logger.info("EmailSync: Checking active knowledge graph for employer application verification...")
-            target_company = company_filter.strip().title() if company_filter else "Target Employer"
-            simulated_records = [
-                {"subject": f"Thank you for applying to {target_company}!", "sender": f"{target_company} Talent Acquisition <recruiting@{target_company.lower().replace(' ', '')}.com>", "company": target_company},
-                {"subject": "Thank you for applying to Postman!", "sender": "Postman Careers <jobs-noreply@postman.com>", "company": "Postman"},
-                {"subject": "Gitlab Application Confirmation: Engineering Position", "sender": "Gitlab Recruiting <careers@gitlab.com>", "company": "Gitlab"},
-                {"subject": "Naukri Application Receipt: Data Engineer", "sender": "Naukri Direct <apply-confirm@naukri.com>", "company": "Naukri"},
-            ]
-            
-            for idx, record in enumerate(simulated_records):
-                if not company_filter or company_filter.lower() in record["company"].lower() or record["company"] == target_company:
-                    sync_results.append({
-                        "subject": record["subject"],
-                        "sender": record["sender"],
-                        "date": datetime.datetime.utcnow().isoformat(),
-                        "source": "Verified Receipt Simulator",
-                        "company": record["company"],
-                        "verified": True
-                    })
+            logger.info("EmailSync: No matching employer application confirmation email detected in inbox.")
+            return []
                 
         # Register logs & update status in Graph Repository
         if sync_results:
